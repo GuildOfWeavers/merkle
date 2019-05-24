@@ -1,4 +1,4 @@
-declare module '@gow/merkle' {
+declare module '@guildofweavers/merkle' {
 
     /**
      * Algorithms that can be used to hash internal tree nodes

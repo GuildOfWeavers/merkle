@@ -1,6 +1,6 @@
 // IMPORTS
 // ================================================================================================
-import { HashAlgorithm, HashFunction } from '@gow/merkle';
+import { HashAlgorithm, HashFunction } from '@guildofweavers/merkle';
 import { sha256, digestSize as sha256ds } from './sha256';
 import { blake2s256, digestSize as blake2s256ds } from './blake2s';
 

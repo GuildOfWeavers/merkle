@@ -3,12 +3,12 @@ Merkle tree and other data structures.
 
 ## Install
 ```bash
-$ npm install @gow/merkle --save
+$ npm install @guildofweavers/merkle --save
 ```
 
 ## Example
 ```TypeScript
-import { MerkleTree } from '@gow/merkle';
+import { MerkleTree } from '@guildofweavers/merkle';
 
 // create an array of values to put into a tree
 const values = [

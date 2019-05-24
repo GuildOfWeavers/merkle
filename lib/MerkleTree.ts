@@ -1,6 +1,6 @@
 // IMPORTS
 // ================================================================================================
-import { BatchMerkleProof, HashAlgorithm } from '@gow/merkle';
+import { BatchMerkleProof, HashAlgorithm } from '@guildofweavers/merkle';
 import { getHashFunction, getHashDigestSize } from './hash';
 
 // CLASS DEFINITION

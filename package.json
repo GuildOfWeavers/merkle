@@ -1,5 +1,5 @@
 {
-  "name": "@gow/merkle",
+  "name": "@guildofweavers/merkle",
   "version": "0.1.0",
   "description": "Merkle tree and other data structures",
   "main": "index.js",
