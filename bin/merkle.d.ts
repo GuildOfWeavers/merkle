@@ -1,32 +1,81 @@
 declare module '@gow/merkle' {
 
+    /**
+     * Algorithms that can be used to hash internal tree nodes
+     */
     export type HashAlgorithm = 'sha256' | 'blake2s256';
     
-    export interface HashFunction {
-        (v1: Buffer, v2?: Buffer): Buffer;
-    }
-
+    /**
+     * Returns digest size (in bytes) for the specified hash algorithm
+     * @param hashAlgorithm 
+     */
     export function getHashDigestSize(hashAlgorithm: HashAlgorithm): number;
 
     export interface BatchMerkleProof {
-        values  : Buffer[];
-        nodes   : Buffer[][];
-        depth   : number;
+        /** leaf nodes located at the indexes covered by the proof */
+        values: Buffer[];
+
+        /** Internal nodes that form the actual proof */
+        nodes: Buffer[][];
+
+        /** Depth of the source Merkle tree */
+        depth: number;
     }
-    
+
     export class MerkleTree {
 
+        /**
+         * Returns a Merkle tree created from the specified values
+         * @param values Values that form the leaves of the tree
+         * @param hashAlgorithm Algorithm to use for hashing of internal nodes
+         */
         static create(values: Buffer[], hashAlgorithm: HashAlgorithm): MerkleTree;
+
+        /**
+         * Returns a Promise for a Merkle tree created from the specified values
+         * @param values Values that form the leaves of the tree
+         * @param hashAlgorithm Algorithm to use for hashing of internal nodes
+         */
         static createAsync(values: Buffer[], hashAlgorithm: HashAlgorithm): Promise<MerkleTree>;
 
-        readonly root   : Buffer;
-        readonly values : Buffer[];
+        /** Root of the tree */
+        readonly root: Buffer;
 
+        /** Leaves of the tree */
+        readonly values: Buffer[];
+
+        /**
+         * Returns a Merkle proof for a single leaf
+         * @param index Index at which the leaf is located
+         */
         prove(index: number): Buffer[];
+
+        /**
+         * Returns a compressed Merkle proof for leaves at the specified indexes
+         * @param indexes List of indexes of leaves to prove
+         */
         proveBatch(indexes: number[]): BatchMerkleProof;
 
+        /**
+         * Verifies Merkle proof for a single index
+         * @param root Root of the Merkle tree
+         * @param index Index of a leaf to verify
+         * @param proof Merkle proof for the leaf at the specified index
+         * @param hashAlgorithm Algorithm used for hashing of internal nodes
+         */
         static verify(root: Buffer, index: number, proof: Buffer[], hashAlgorithm: HashAlgorithm): boolean;
+
+        /**
+         * Verifies Merkle proof for a list of indexes
+         * @param root Root of the Merkle tree
+         * @param index Indexes of leaves to verify
+         * @param proof Compressed Merkle proof for the leaves at the specified indexes
+         * @param hashAlgorithm Algorithm used for hashing of internal nodes
+         */
         static verifyBatch(root: Buffer, indexes: number[], proof: BatchMerkleProof, hashAlgorithm: HashAlgorithm): boolean;
     }
 
+    export interface HashFunction {
+        (v1: Buffer, v2?: Buffer): Buffer;
+    }
 }
