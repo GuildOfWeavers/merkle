@@ -1,6 +1,6 @@
 declare module '@gow/merkle' {
 
-    export type HashAlgorithm = 'sha256';
+    export type HashAlgorithm = 'sha256' | 'blake2s256';
     
     export interface HashFunction {
         (v1: Buffer, v2?: Buffer): Buffer;
