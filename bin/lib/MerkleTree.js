@@ -13,38 +13,43 @@ class MerkleTree {
     static create(values, hashAlgorithm) {
         // determine hash function
         const hash = hash_1.getHashFunction(hashAlgorithm);
-        // allocate memory for tree nodes
+        const nodeSize = hash_1.getHashDigestSize(hashAlgorithm);
+        // allocate memory for tree nodes (all internal nodes are stored in a single array buffer)
         const depth = Math.ceil(Math.log2(values.length));
-        const nodes = new Array(2 ** depth);
-        // build first row of nodes (parents of values)
-        const parentCount = nodes.length / 2;
+        const nodeCount = 2 ** depth;
+        const nodes = new ArrayBuffer(nodeCount * nodeSize);
+        const nodeBuffer = Buffer.from(nodes);
+        // build first row of internal nodes (parents of values)
+        const parentCount = nodeCount / 2;
         let i = parentCount, parent;
         for (let j = 0; j < values.length; j += 2, i++) {
             let value1 = values[j];
             let value2 = (j + 1 < values.length) ? values[j + 1] : value1;
             parent = hash(value1, value2);
-            nodes[i] = parent;
+            parent.copy(nodeBuffer, i * nodeSize);
         }
         // backfill any remaining parents
-        while (i < nodes.length) {
-            nodes[i] = parent;
+        while (i < nodeCount) {
+            parent.copy(nodeBuffer, i * nodeSize);
             i++;
         }
         // calculate all other tree nodes
         for (let i = parentCount - 1; i > 0; i--) {
-            nodes[i] = hash(nodes[i * 2], nodes[i * 2 + 1]);
+            let n12 = Buffer.from(nodes, 2 * i * nodeSize, 2 * nodeSize);
+            hash(n12).copy(nodeBuffer, i * nodeSize);
         }
-        return new MerkleTree(nodes, values, depth);
+        return new MerkleTree(nodes, values, depth, nodeSize);
     }
-    constructor(nodes, values, depth) {
+    constructor(nodes, values, depth, nodeSize) {
         this.depth = depth;
         this.nodes = nodes;
         this.values = values;
+        this.nodeSize = nodeSize;
     }
     // PUBLIC ACCESSORS
     // --------------------------------------------------------------------------------------------
     get root() {
-        return this.nodes[1];
+        return Buffer.from(this.nodes, this.nodeSize, this.nodeSize);
     }
     // PUBLIC METHODS
     // --------------------------------------------------------------------------------------------
@@ -55,17 +60,22 @@ class MerkleTree {
             throw new TypeError(`Invalid index: ${index}`);
         if (!Number.isInteger(index))
             throw new TypeError(`Invalid index: ${index}`);
+        const nodeSize = this.nodeSize;
+        const nodeCount = this.nodes.byteLength / nodeSize;
         const value1 = this.values[index];
         const value2 = this.values[index ^ 1];
         const proof = [value1, value2];
-        index = (index + this.nodes.length) >> 1;
+        index = (index + nodeCount) >> 1;
         while (index > 1) {
-            proof.push(this.nodes[index ^ 1]);
+            let sibling = Buffer.from(this.nodes, (index ^ 1) * nodeSize, nodeSize);
+            proof.push(sibling);
             index = index >> 1;
         }
         return proof;
     }
     proveBatch(indexes) {
+        const nodeSize = this.nodeSize;
+        const nodeCount = this.nodes.byteLength / nodeSize;
         const indexMap = mapIndexes(indexes, this.values.length);
         indexes = normalizeIndexes(indexes);
         const proof = {
@@ -97,7 +107,7 @@ class MerkleTree {
                 proof.values[inputIndex2] = v2;
                 proof.nodes[i] = [v1];
             }
-            nextIndexes.push((index + this.nodes.length) >> 1);
+            nextIndexes.push((index + nodeCount) >> 1);
         }
         // add required internal nodes to the proof, skipping redundancies
         for (let d = this.depth - 1; d > 0; d--) {
@@ -109,7 +119,8 @@ class MerkleTree {
                     i++;
                 }
                 else {
-                    proof.nodes[i].push(this.nodes[siblingIndex]);
+                    let sibling = Buffer.from(this.nodes, siblingIndex * nodeSize, nodeSize);
+                    proof.nodes[i].push(sibling);
                 }
                 // add parent index to the set of next indexes
                 nextIndexes.push(siblingIndex >> 1);
