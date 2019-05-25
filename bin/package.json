@@ -1,6 +1,6 @@
 {
   "name": "@guildofweavers/merkle",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Merkle tree and other data structures",
   "main": "index.js",
   "typings": "merkle.d.ts",
@@ -10,8 +10,8 @@
     "email": "bobbinth@protonmail.com"
   },
   "keywords": [
-    "merkle-tree",
-    "merkle-proof",
+    "merkle tree",
+    "merkle proof",
     "cryptography"
   ],
   "repository": {

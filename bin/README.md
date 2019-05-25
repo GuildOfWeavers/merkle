@@ -31,36 +31,30 @@ console.log(result); // true
 ```
 
 ## API
-You can find complete API definitions in [merkle.d.ts](/merkle.d.ts). Here is a quick overview of the most common tasks:
+You can find complete API definitions in [merkle.d.ts](/merkle.d.ts). Here is a quick overview of the provided functionality:
 
 ### Creating Merkle trees
 You can use two methods to create a Merkle Tree from a list of values:
 
-```TypeScript
-MerkleTree.create(values: Buffer[], hashAlgorithm: string): MerkleTree
-MerkleTree.createAsync(values: Buffer[], hashAlgorithm: string): Promise<MerkleTree>
-```
+* static **create**(values: `Buffer[]`, hashAlgorithm: `string`): `MerkleTree`
+* static **createAsync**(values: `Buffer[]`, hashAlgorithm: `string`): `Promise<MerkleTree>`
 
-Both methods take an array of `Buffer` objects and a name of the hash algorithm to use when building the tree. Currently, only 2 hash algorithms are supported: `sha256` and `blake2s256`.
+Both methods take an array of values and a name of the hash algorithm to use when building the tree. Currently, only 2 hash algorithms are supported: `sha256` and `blake2s256`.
 
 **Note:** async method is currently just a placeholder. All it does is call the sync version and returns the result.
 
 ### Creating Merkle proofs
 Once you have a tree, you can use it to prove that a value is located at a certain index like so:
 
-```TypeScript
-tree.prove(index: number): Buffer[]
-```
-
-The returned proof is an array which has the values as the first element, and nodes comprising the proof as all other elements.
+* **prove**(index: `number`): `Buffer[]`<br />
+  The returned proof is an array which has the values as the first element, and nodes comprising the proof as all other elements.
 
 You can also create a proof for many indexes at the same time:
 
-```TypeScript
-tree.proveBatch(indexes: number[]): BatchMerkleProof
-```
-
-The resulting proof is compressed. So, if you need to prove membership of multiple values, this is a much more efficient approach. The batch proof has the following form:
+* **proveBatch**(indexes: `number[]`): `BatchMerkleProof`<br />
+  The resulting proof is compressed. So, if you need to prove membership of multiple values, this is a much more efficient approach.
+  
+  Batch proof has the following form:
 
 ```TypeScript
 interface BatchMerkleProof {
@@ -74,19 +68,13 @@ where, `values` are the leaves located at the indexes covered by the proof, `nod
 ### Verifying Merkle proofs
 Once you have a proof, you can verify it against a tree root like so:
 
-```TypeScript
-MerkleTree.verify(root: Buffer, index: number, proof: Buffer[], hashAlgorithm: string): boolean
-```
-
-This will return `true` if the value located at the first position in the `proof` array is indeed located at the specified `index` in the tree.
+* static **verify**(root: `Buffer`, index: `number`, proof: `Buffer[]`, hashAlgorithm: `string`): `boolean`<br />
+  This will return `true` if the value located at the first position in the `proof` array is indeed located at the specified `index` in the tree.
 
 For the batched version use:
 
-```TypeScript
-MerkleTree.verifyBatch(root: Buffer, indexes: number[], proof: BatchMerkleProof, hashAlgorithm: string): boolean
-```
-
-Similarly to single-index version, this will return `true` if the values in `proof.values` are indeed located at the specified `indexes` in the tree.
+* static **verifyBatch**(root: `Buffer`, indexes: `number[]`, proof: `BatchMerkleProof`, hashAlgorithm: `string`): `boolean`<br />
+  Similarly to single-index version, this will return `true` if the values in `proof.values` are indeed located at the specified `indexes` in the tree.
 
 ## References
 
