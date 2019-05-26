@@ -1,4 +1,4 @@
 // RE-EXPORTS
 // ================================================================================================
 export { MerkleTree } from './lib/MerkleTree';
-export { getHashDigestSize } from './lib/hash';
+export { getHashDigestSize, getHashFunction } from './lib/hash';
