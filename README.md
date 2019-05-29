@@ -80,3 +80,6 @@ For the batched version use:
 
 * Wikipedia article on [Merkle trees](https://en.wikipedia.org/wiki/Merkle_tree).
 * Batch proof/verification use a variation of the Octopus algorithm from [this paper](https://eprint.iacr.org/2017/933.pdf).
+
+# License
+[MIT](/LICENSE) © 2019 Guild of Weavers
