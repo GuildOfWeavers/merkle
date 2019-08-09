@@ -3,6 +3,7 @@
 import { HashAlgorithm, HashFunction } from '@guildofweavers/merkle';
 import { sha256, digestSize as sha256ds } from './sha256';
 import { blake2s256, digestSize as blake2s256ds } from './blake2s';
+import { wasmBlake2s256, digestSize as wasmBlake2s256ds } from './wasmBlake2s';
 
 // PUBLIC FUNCTIONS
 // ================================================================================================
@@ -13,6 +14,9 @@ export function getHashFunction(algorithm: HashAlgorithm): HashFunction {
         }
         case 'blake2s256': {
             return blake2s256;
+        }
+        case 'wasmBlake2s256': {
+            return wasmBlake2s256;
         }
         default: {
             throw new TypeError('Invalid hash algorithm');
@@ -27,6 +31,9 @@ export function getHashDigestSize(algorithm: HashAlgorithm): number {
         }
         case "blake2s256": {
             return blake2s256ds;
+        }
+        case 'wasmBlake2s256': {
+            return wasmBlake2s256ds;
         }
         default: {
             throw new TypeError('Invalid hash algorithm');

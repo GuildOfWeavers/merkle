@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const sha256_1 = require("./sha256");
 const blake2s_1 = require("./blake2s");
+const wasmBlake2s_1 = require("./wasmBlake2s");
 // PUBLIC FUNCTIONS
 // ================================================================================================
 function getHashFunction(algorithm) {
@@ -11,6 +12,9 @@ function getHashFunction(algorithm) {
         }
         case 'blake2s256': {
             return blake2s_1.blake2s256;
+        }
+        case 'wasmBlake2s256': {
+            return wasmBlake2s_1.wasmBlake2s256;
         }
         default: {
             throw new TypeError('Invalid hash algorithm');
@@ -25,6 +29,9 @@ function getHashDigestSize(algorithm) {
         }
         case "blake2s256": {
             return blake2s_1.digestSize;
+        }
+        case 'wasmBlake2s256': {
+            return wasmBlake2s_1.digestSize;
         }
         default: {
             throw new TypeError('Invalid hash algorithm');

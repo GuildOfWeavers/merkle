@@ -1,7 +1,7 @@
 declare module '@guildofweavers/merkle' {
 
     /** Algorithms that can be used to hash internal tree nodes */
-    export type HashAlgorithm = 'sha256' | 'blake2s256';
+    export type HashAlgorithm = 'sha256' | 'blake2s256' | 'wasmBlake2s256';
     
     /** Returns digest size (in bytes) for the specified hash algorithm */
     export function getHashDigestSize(hashAlgorithm: HashAlgorithm): number;
