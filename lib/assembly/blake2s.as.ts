@@ -98,63 +98,51 @@ function compress(hRef: usize, last: boolean): void {
 
     let bRef = changetype<usize>(b);
     let sRef = changetype<usize>(SIGMA);
-    let s1: u8, s2: u8, m1: u32, m2: u32;
+    let si: u32, m1: u32, m2: u32;
     for (let i = 0; i < 160; i += 16) {
         // mix 1
-        s1 = load<u8>(sRef + i, 0);
-        s2 = load<u8>(sRef + i, 1);
-        m1 = load<u32>(bRef + (s1 << 2));
-        m2 = load<u32>(bRef + (s2 << 2));
-        mix(0, 4,  8, 12, m1, m2);
+        si = load<u32>(sRef + i, 0);
+        m1 = load<u32>(bRef + ((si & 0x000000FF) << 2));
+        m2 = load<u32>(bRef + ((si & 0x0000FF00) >> 6));
+        mix(0, 16, 32, 48, m1, m2);
 
         // mix 2
-        s1 = load<u8>(sRef + i, 2);
-        s2 = load<u8>(sRef + i, 3);
-        m1 = load<u32>(bRef + (s1 << 2));
-        m2 = load<u32>(bRef + (s2 << 2));
-        mix(1, 5,  9, 13, m1, m2);
+        m1 = load<u32>(bRef + ((si & 0x00FF0000) >> 14));
+        m2 = load<u32>(bRef + ((si & 0xFF000000) >> 22));
+        mix(4, 20, 36, 52, m1, m2);
 
         // mix 3
-        s1 = load<u8>(sRef + i, 4);
-        s2 = load<u8>(sRef + i, 5);
-        m1 = load<u32>(bRef + (s1 << 2));
-        m2 = load<u32>(bRef + (s2 << 2));
-        mix(2, 6, 10, 14, m1, m2);
+        si = load<u32>(sRef + i, 4);
+        m1 = load<u32>(bRef + ((si & 0x000000FF) << 2));
+        m2 = load<u32>(bRef + ((si & 0x0000FF00) >> 6));
+        mix(8, 24, 40, 56, m1, m2);
 
         // mix 4
-        s1 = load<u8>(sRef + i, 6);
-        s2 = load<u8>(sRef + i, 7);
-        m1 = load<u32>(bRef + (s1 << 2));
-        m2 = load<u32>(bRef + (s2 << 2));
-        mix(3, 7, 11, 15, m1, m2);
+        m1 = load<u32>(bRef + ((si & 0x00FF0000) >> 14));
+        m2 = load<u32>(bRef + ((si & 0xFF000000) >> 22));
+        mix(12, 28, 44, 60, m1, m2);
 
         // mix 5
-        s1 = load<u8>(sRef + i, 8);
-        s2 = load<u8>(sRef + i, 9);
-        m1 = load<u32>(bRef + (s1 << 2));
-        m2 = load<u32>(bRef + (s2 << 2));
-        mix(0, 5, 10, 15, m1, m2);
+        si = load<u32>(sRef + i, 8);
+        m1 = load<u32>(bRef + ((si & 0x000000FF) << 2));
+        m2 = load<u32>(bRef + ((si & 0x0000FF00) >> 6));
+        mix(0, 20, 40, 60, m1, m2);
 
         // mix 6
-        s1 = load<u8>(sRef + i, 10);
-        s2 = load<u8>(sRef + i, 11);
-        m1 = load<u32>(bRef + (s1 << 2));
-        m2 = load<u32>(bRef + (s2 << 2));
-        mix(1, 6, 11, 12, m1, m2);
+        m1 = load<u32>(bRef + ((si & 0x00FF0000) >> 14));
+        m2 = load<u32>(bRef + ((si & 0xFF000000) >> 22));
+        mix(4, 24, 44, 48, m1, m2);
 
         // mix 7
-        s1 = load<u8>(sRef + i, 12);
-        s2 = load<u8>(sRef + i, 13);
-        m1 = load<u32>(bRef + (s1 << 2));
-        m2 = load<u32>(bRef + (s2 << 2));
-        mix(2, 7,  8, 13, m1, m2);
+        si = load<u32>(sRef + i, 12);
+        m1 = load<u32>(bRef + ((si & 0x000000FF) << 2));
+        m2 = load<u32>(bRef + ((si & 0x0000FF00) >> 6));
+        mix(8, 28, 32, 52, m1, m2);
 
         // mix 8
-        s1 = load<u8>(sRef + i, 14);
-        s2 = load<u8>(sRef + i, 15);
-        m1 = load<u32>(bRef + (s1 << 2));
-        m2 = load<u32>(bRef + (s2 << 2));
-        mix(3, 4,  9, 14, m1, m2);
+        m1 = load<u32>(bRef + ((si & 0x00FF0000) >> 14));
+        m2 = load<u32>(bRef + ((si & 0xFF000000) >> 22));
+        mix(12, 16, 36, 56, m1, m2);
     }
 
     let v1: u32, v2: u32, hv: u32;
@@ -169,34 +157,23 @@ function compress(hRef: usize, last: boolean): void {
 function mix(a: u8, b: u8, c: u8, d: u8, x: u32, y: u32): void {
 
     let vRef = changetype<usize>(v);
-    let vaRef = vRef + (a << 2);
-    let vbRef = vRef + (b << 2);
-    let vcRef = vRef + (c << 2);
-    let vdRef = vRef + (d << 2);
+    let vaRef = vRef + a;
+    let vbRef = vRef + b;
+    let vcRef = vRef + c;
+    let vdRef = vRef + d;
     
     let va = load<u32>(vaRef);          // v[a] = v[a] + v[b] + x
     let vb = load<u32>(vbRef);
     va = va + vb + x;
-    
-    let vd = load<u32>(vdRef);          // v[d] = ROTR32(v[d] ^ v[a], 16)
-    vd = vd ^ va;
-    vd = (vd >> 16) ^ (vd << 16);
-
+    let vd = load<u32>(vdRef);          // v[d] = rotr(v[d] ^ v[a], 16)
+    vd = rotr(vd ^ va, 16);
     let vc = load<u32>(vcRef);          // v[c] = v[c] + v[d]
     vc = vc + vd;
-
-    vb = vb ^ vc;                       // v[b] = ROTR32(v[b] ^ v[c], 12)
-    vb = (vb >> 12) ^ (vb << 20);
-
+    vb = rotr(vb ^ vc, 12);             // v[b] = rotr(v[b] ^ v[c], 12)
     va = va + vb + y;                   // v[a] = v[a] + v[b] + y
-
-    vd = vd ^ va;                       // v[d] = ROTR32(v[d] ^ v[a], 8)
-    vd = (vd >> 8) ^ (vd << 24);
-
+    vd = rotr(vd ^ va, 8);              // v[d] = rotr(v[d] ^ v[a], 8)
     vc = vc + vd;                       // v[c] = v[c] + v[d]
-
-    vb = vb ^ vc;                       // v[b] = ROTR32(v[b] ^ v[c], 7)
-    vb = (vb >> 7) ^ (vb << 25);
+    vb = rotr(vb ^ vc, 7);              // v[b] = rotr(v[b] ^ v[c], 7)
 
     store<u32>(vaRef, va);
     store<u32>(vbRef, vb);
