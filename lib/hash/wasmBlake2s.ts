@@ -16,9 +16,18 @@ const oEnd = oRef + digestSize;
 // ================================================================================================
 export function wasmBlake2s256(v1: Buffer, v2?: Buffer): Buffer {
     if (v2 === undefined) {
-        wasm.U8.set(v1, i1Ref);
-        wasm.hash1(i1Ref, oRef);
-        return Buffer.from(wasm.U8.slice(oRef, oEnd));
+        if (v1.byteLength === 32) {
+            wasm.U8.set(v1, i1Ref);
+            wasm.hash1(i1Ref, oRef);
+            return Buffer.from(wasm.U8.slice(oRef, oEnd));
+        }
+        else {
+            const vRef = wasm.newArray(v1.byteLength);
+            wasm.U8.set(v1, vRef);
+            wasm.hash3(vRef, v1.byteLength, oRef);
+            wasm.__release(vRef);
+            return Buffer.from(wasm.U8.slice(oRef, oEnd));
+        }
     }
     else {
         wasm.U8.set(v1, i1Ref);

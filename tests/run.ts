@@ -1,13 +1,16 @@
 // IMPORTS
 // ================================================================================================
 import * as assert from 'assert';
+import * as crypto from 'crypto';
 import { MerkleTree } from '../lib/MerkleTree';
+import { HashAlgorithm } from '@guildofweavers/merkle';
 
 // MODULE VARIABLES
 // ================================================================================================
-const iterations = 100;
-const leafCount = 2**16;
+const iterations = 10;
+const leafCount = 2**18;
 const branchCount = 2*7;
+const algorithm : HashAlgorithm = 'sha256';
 
 // TESTS
 // ================================================================================================
@@ -18,8 +21,7 @@ const branchCount = 2*7;
     for (let i = 0; i < iterations; i++) {
         let elements: Buffer[] = [];
         for (let i = 0; i < leafCount; i++) {
-            const hexValue = Math.floor(Math.random() * 10000000).toString(16);
-            elements.push(Buffer.from(hexValue, 'hex'));
+            elements.push(crypto.randomBytes(32));
         }
         
         let indexSet = new Set<number>();
@@ -35,7 +37,7 @@ const branchCount = 2*7;
         let controls = Array.from(controlSet);
 
         let start = Date.now();
-        const tree = MerkleTree.create(elements, 'sha256');
+        const tree = MerkleTree.create(elements, algorithm);
         t0 += Date.now() - start;
 
         start = Date.now();
@@ -46,8 +48,8 @@ const branchCount = 2*7;
         }
         s1 += mp.values.length;
         
-        assert.equal(MerkleTree.verifyBatch(tree.root, indexes, mp, 'sha256'), true);
-        assert.equal(MerkleTree.verifyBatch(tree.root, controls, mp, 'sha256'), false);
+        assert.equal(MerkleTree.verifyBatch(tree.root, indexes, mp, algorithm), true);
+        assert.equal(MerkleTree.verifyBatch(tree.root, controls, mp, algorithm), false);
     }
 
     console.log(`tree built in ${Math.round(t0 / iterations)} ms`);

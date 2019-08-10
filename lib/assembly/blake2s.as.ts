@@ -18,7 +18,7 @@ export function getIvRef(): usize {
 // ================================================================================================
 let v = new ArrayBuffer(64);
 let m = new ArrayBuffer(64);
-let c: u64 = 0;
+let c: i32 = 0;
 let t: u64 = 0;
 
 // INPUTS / OUTPUTS
@@ -37,6 +37,10 @@ export function getInput2Ref(): usize {
 
 export function getOutputRef(): usize {
     return changetype<usize>(_output);
+}
+
+export function newArray(length: i32): ArrayBuffer {
+    return new ArrayBuffer(length);
 }
 
 // PUBLIC FUNCTIONS
@@ -72,6 +76,35 @@ export function hash2(xRef: usize, yRef: usize, resRef: usize): void {
     memory.copy(mRef + 32, yRef, 32);
     
     // run compression function and store result under resRef
+    compress(resRef, true);
+}
+
+export function hash3(vRef: usize, vLength: i32, resRef: usize): void {
+
+    // initialize the context
+    store<u32>(resRef, 0x6b08e647);   // h[0] = IV[0] ^ 0x01010000 ^ 0 ^ 32;
+    memory.copy(resRef + 4, changetype<usize>(IV) + 4, 28);
+    c = 0;
+    t = 0;
+
+    // run intermediate compressions
+    let mRef = changetype<usize>(m);
+    for (let i = 0; i < vLength; i++) {
+        if (c == 64) {
+            t += c;
+            compress(resRef, false);
+            c = 0;
+        }
+        store<u8>(mRef + c, load<u8>(vRef + i));
+        c++;
+    }
+
+    // run final compression
+    t += c;
+    while (c < 64) {
+        store<u8>(mRef + c, 0);
+        c++;
+    }
     compress(resRef, true);
 }
 
