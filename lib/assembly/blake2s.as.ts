@@ -14,6 +14,13 @@ export function getIvRef(): usize {
     return changetype<usize>(IV);
 }
 
+// MODULE VARIABLES
+// ================================================================================================
+let v = new ArrayBuffer(64);
+let m = new ArrayBuffer(64);
+let c: u64 = 0;
+let t: u64 = 0;
+
 // INPUTS / OUTPUTS
 // ================================================================================================
 let _input1 = new ArrayBuffer(32);
@@ -43,9 +50,9 @@ export function hash1(vRef: usize, resRef: usize): void {
     t = 32;
 
     // copy input into the buffer
-    let bRef = changetype<usize>(b);
-    memory.copy(bRef, vRef, 32);
-    memory.fill(bRef + 32, 0, 32);
+    let mRef = changetype<usize>(m);
+    memory.copy(mRef, vRef, 32);
+    memory.fill(mRef + 32, 0, 32);
     
     // run compression function and store result under resRef
     compress(resRef, true);
@@ -60,20 +67,13 @@ export function hash2(xRef: usize, yRef: usize, resRef: usize): void {
     t = 64;
 
     // copy input into the buffer
-    let bRef = changetype<usize>(b);
-    memory.copy(bRef, xRef, 32);
-    memory.copy(bRef + 32, yRef, 32);
+    let mRef = changetype<usize>(m);
+    memory.copy(mRef, xRef, 32);
+    memory.copy(mRef + 32, yRef, 32);
     
     // run compression function and store result under resRef
     compress(resRef, true);
 }
-
-// MODULE VARIABLES
-// ================================================================================================
-let v = new ArrayBuffer(64);
-let b = new ArrayBuffer(64);
-let c: u64 = 0;
-let t: u64 = 0;
 
 // INTERNAL FUNCTIONS
 // ================================================================================================
@@ -96,53 +96,21 @@ function compress(hRef: usize, last: boolean): void {
         store<u32>(vRef, ~v14, 14 * 4);
     }
 
-    let bRef = changetype<usize>(b);
-    let sRef = changetype<usize>(SIGMA);
-    let si: u32, m1: u32, m2: u32;
-    for (let i = 0; i < 160; i += 16) {
-        // mix 1
-        si = load<u32>(sRef + i, 0);
-        m1 = load<u32>(bRef + ((si & 0x000000FF) << 2));
-        m2 = load<u32>(bRef + ((si & 0x0000FF00) >> 6));
-        mix(0, 16, 32, 48, m1, m2);
+    let sRef = changetype<usize>(SIGMA), sRefEnd = sRef + 160, si: u64;
+    while (sRef < sRefEnd) {
+        si = load<u64>(sRef, 0);
+        mix( 0, 16, 32, 48, <u8>(si),       <u8>(si >>  8));
+        mix( 4, 20, 36, 52, <u8>(si >> 16), <u8>(si >> 24));
+        mix( 8, 24, 40, 56, <u8>(si >> 32), <u8>(si >> 40));
+        mix(12, 28, 44, 60, <u8>(si >> 48), <u8>(si >> 56));
 
-        // mix 2
-        m1 = load<u32>(bRef + ((si & 0x00FF0000) >> 14));
-        m2 = load<u32>(bRef + ((si & 0xFF000000) >> 22));
-        mix(4, 20, 36, 52, m1, m2);
+        si = load<u64>(sRef, 8);
+        mix( 0, 20, 40, 60, <u8>(si),       <u8>(si >>  8));
+        mix( 4, 24, 44, 48, <u8>(si >> 16), <u8>(si >> 24));
+        mix( 8, 28, 32, 52, <u8>(si >> 32), <u8>(si >> 40));
+        mix(12, 16, 36, 56, <u8>(si >> 48), <u8>(si >> 56));
 
-        // mix 3
-        si = load<u32>(sRef + i, 4);
-        m1 = load<u32>(bRef + ((si & 0x000000FF) << 2));
-        m2 = load<u32>(bRef + ((si & 0x0000FF00) >> 6));
-        mix(8, 24, 40, 56, m1, m2);
-
-        // mix 4
-        m1 = load<u32>(bRef + ((si & 0x00FF0000) >> 14));
-        m2 = load<u32>(bRef + ((si & 0xFF000000) >> 22));
-        mix(12, 28, 44, 60, m1, m2);
-
-        // mix 5
-        si = load<u32>(sRef + i, 8);
-        m1 = load<u32>(bRef + ((si & 0x000000FF) << 2));
-        m2 = load<u32>(bRef + ((si & 0x0000FF00) >> 6));
-        mix(0, 20, 40, 60, m1, m2);
-
-        // mix 6
-        m1 = load<u32>(bRef + ((si & 0x00FF0000) >> 14));
-        m2 = load<u32>(bRef + ((si & 0xFF000000) >> 22));
-        mix(4, 24, 44, 48, m1, m2);
-
-        // mix 7
-        si = load<u32>(sRef + i, 12);
-        m1 = load<u32>(bRef + ((si & 0x000000FF) << 2));
-        m2 = load<u32>(bRef + ((si & 0x0000FF00) >> 6));
-        mix(8, 28, 32, 52, m1, m2);
-
-        // mix 8
-        m1 = load<u32>(bRef + ((si & 0x00FF0000) >> 14));
-        m2 = load<u32>(bRef + ((si & 0xFF000000) >> 22));
-        mix(12, 16, 36, 56, m1, m2);
+        sRef += 16;
     }
 
     let v1: u32, v2: u32, hv: u32;
@@ -154,7 +122,11 @@ function compress(hRef: usize, last: boolean): void {
     }
 }
 
-function mix(a: u8, b: u8, c: u8, d: u8, x: u32, y: u32): void {
+function mix(a: u8, b: u8, c: u8, d: u8, xi: u8, yi: u8): void {
+
+    let mRef = changetype<usize>(m);
+    let x = load<u32>(mRef + xi);
+    let y = load<u32>(mRef + yi);
 
     let vRef = changetype<usize>(v);
     let vaRef = vRef + a;

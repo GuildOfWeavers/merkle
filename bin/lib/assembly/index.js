@@ -34,7 +34,7 @@ function instantiateBlake2s() {
     });
     let sIdx = wasm.getSigmaRef();
     for (let sigma of SIGMA) {
-        wasm.U8[sIdx] = sigma;
+        wasm.U8[sIdx] = sigma * 4;
         sIdx++;
     }
     let iIdx = wasm.getIvRef() >> 2;
