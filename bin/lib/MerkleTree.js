@@ -11,30 +11,10 @@ class MerkleTree {
         return MerkleTree.create(values, hashAlgorithm);
     }
     static create(values, hashAlgorithm) {
-        // determine hash function
-        const hashLeaves = hashing.getLeafHasher(hashAlgorithm);
-        const hashNodes = hashing.getNodeHasher(hashAlgorithm);
+        const buildTree = hashing.getMerkleTreeBuilder(hashAlgorithm);
         const nodeSize = hashing.getHashDigestSize(hashAlgorithm);
-        // allocate memory for tree nodes (all internal nodes are stored in a single array buffer)
         const depth = Math.ceil(Math.log2(values.length));
-        const nodeCount = 2 ** depth;
-        const nodes = new ArrayBuffer(nodeCount * nodeSize);
-        const nodeBuffer = Buffer.from(nodes);
-        // build first row of internal nodes (parents of values)
-        const parentCount = nodeCount / 2;
-        let i = parentCount;
-        for (let j = 0; j < values.length; j += 2, i++) {
-            let value1 = values[j];
-            let value2 = (j + 1 < values.length) ? values[j + 1] : value1;
-            hashLeaves(value1, value2, nodeBuffer, i * nodeSize);
-        }
-        // backfill any remaining parents
-        while (i < nodeCount) {
-            //parent!.copy(nodeBuffer, i * nodeSize);
-            i++;
-        }
-        // calculate all other tree nodes
-        hashNodes(nodeBuffer, parentCount - 1);
+        const nodes = buildTree(depth, values);
         return new MerkleTree(nodes, values, depth, nodeSize);
     }
     constructor(nodes, values, depth, nodeSize) {
@@ -73,7 +53,7 @@ class MerkleTree {
     proveBatch(indexes) {
         const nodeSize = this.nodeSize;
         const nodeCount = this.nodes.byteLength / nodeSize;
-        const indexMap = mapIndexes(indexes, this.values.length);
+        const indexMap = mapIndexes(indexes, this.values.length - 1);
         indexes = normalizeIndexes(indexes);
         const proof = {
             values: new Array(indexMap.size),
@@ -150,7 +130,7 @@ class MerkleTree {
         const hash = hashing.getHashFunction(hashAlgorithm);
         // replace odd indexes, offset, and sort in ascending order
         const offset = 2 ** proof.depth;
-        const indexMap = mapIndexes(indexes, offset);
+        const indexMap = mapIndexes(indexes, offset - 1);
         indexes = normalizeIndexes(indexes);
         if (indexes.length !== proof.nodes.length)
             return false;

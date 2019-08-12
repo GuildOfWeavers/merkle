@@ -6,6 +6,9 @@ const crypto = require("crypto");
 // MODULE VARIABLES
 // ================================================================================================
 exports.digestSize = 32;
+const DOUBLE_INPUT_LENGTH = 2 * exports.digestSize;
+const NULL_BUFFER = Buffer.alloc(exports.digestSize);
+const NULL_PARENT = hash(NULL_BUFFER, NULL_BUFFER);
 // PUBLIC FUNCTIONS
 // ================================================================================================
 function hash(v1, v2) {
@@ -22,22 +25,43 @@ function hash(v1, v2) {
     }
 }
 exports.hash = hash;
-function hashLeaves(leaf1, leaf2, target, offset) {
-    const hash = crypto.createHash('blake2s256');
-    hash.update(leaf1);
-    hash.update(leaf2);
-    hash.digest().copy(target, offset);
-}
-exports.hashLeaves = hashLeaves;
-function hashNodes(nodes, offset) {
-    const inputLength = exports.digestSize * 2;
-    for (let i = offset; i > 0; i--) {
+function buildMerkleTree(depth, leaves) {
+    // allocate memory for tree nodes
+    const nodeCount = 2 ** depth;
+    const nodes = new ArrayBuffer(nodeCount * exports.digestSize);
+    const nodeBuffer = Buffer.from(nodes);
+    // build first row of internal nodes (parents of values)
+    const parentCount = nodeCount / 2;
+    const evenLeafCount = (leaves.length & 1) ? leaves.length - 1 : leaves.length;
+    let i = parentCount;
+    for (let j = 0; j < evenLeafCount; j += 2, i++) {
+        let hash = crypto.createHash('blake2s256');
+        hash.update(leaves[j]);
+        hash.update(leaves[j + 1]);
+        hash.digest().copy(nodeBuffer, i * exports.digestSize);
+    }
+    // if the number of leaves was odd, process the last leaf
+    if (evenLeafCount !== leaves.length) {
+        let hash = crypto.createHash('blake2s256');
+        hash.update(leaves[evenLeafCount]);
+        hash.update(NULL_BUFFER);
+        hash.digest().copy(nodeBuffer, i * exports.digestSize);
+        i++;
+    }
+    // if number of leaves was not a power of 2, assume all other leaves are NULL
+    while (i < nodeCount) {
+        NULL_PARENT.copy(nodeBuffer, i * exports.digestSize);
+        i++;
+    }
+    // calculate all other tree nodes
+    for (let i = parentCount - 1; i > 0; i--) {
         let tIndex = i * exports.digestSize;
         let sIndex = tIndex << 1;
         let hash = crypto.createHash('blake2s256');
-        hash.update(nodes.slice(sIndex, sIndex + inputLength));
-        hash.digest().copy(nodes, tIndex);
+        hash.update(nodeBuffer.slice(sIndex, sIndex + DOUBLE_INPUT_LENGTH));
+        hash.digest().copy(nodeBuffer, tIndex);
     }
+    return nodes;
 }
-exports.hashNodes = hashNodes;
+exports.buildMerkleTree = buildMerkleTree;
 //# sourceMappingURL=blake2s.js.map

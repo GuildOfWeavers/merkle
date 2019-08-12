@@ -7,8 +7,7 @@ import * as wasmBlake2s256 from './wasmBlake2s';
 
 // INTERFACES
 // ================================================================================================
-export type LeafHasher = (leaf1: Buffer, leaf2: Buffer, target: Buffer, offset: number) => void;
-export type NodeHasher = (nodes: Buffer, offset: number) => void;
+export type MerkleTreeBuilder = (depth: number, leaves: Buffer[]) => ArrayBuffer;
 
 // PUBLIC FUNCTIONS
 // ================================================================================================
@@ -46,33 +45,16 @@ export function getHashDigestSize(algorithm: HashAlgorithm): number {
     }
 }
 
-export function getLeafHasher(algorithm: HashAlgorithm): LeafHasher {
+export function getMerkleTreeBuilder(algorithm: HashAlgorithm): MerkleTreeBuilder {
     switch (algorithm) {
         case "sha256": {
-            return sha256.hashLeaves;
+            return sha256.buildMerkleTree;
         }
         case "blake2s256": {
-            return blake2s256.hashLeaves;
+            return blake2s256.buildMerkleTree;
         }
         case 'wasmBlake2s256': {
-            return wasmBlake2s256.hashLeaves;
-        }
-        default: {
-            throw new TypeError('Invalid hash algorithm');
-        }
-    }
-}
-
-export function getNodeHasher(algorithm: HashAlgorithm): NodeHasher {
-    switch (algorithm) {
-        case "sha256": {
-            return sha256.hashNodes;
-        }
-        case "blake2s256": {
-            return blake2s256.hashNodes;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.hashNodes;
+            return wasmBlake2s256.buildMerkleTree;
         }
         default: {
             throw new TypeError('Invalid hash algorithm');

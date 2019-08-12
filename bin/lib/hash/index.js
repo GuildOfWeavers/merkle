@@ -39,38 +39,21 @@ function getHashDigestSize(algorithm) {
     }
 }
 exports.getHashDigestSize = getHashDigestSize;
-function getLeafHasher(algorithm) {
+function getMerkleTreeBuilder(algorithm) {
     switch (algorithm) {
         case "sha256": {
-            return sha256.hashLeaves;
+            return sha256.buildMerkleTree;
         }
         case "blake2s256": {
-            return blake2s256.hashLeaves;
+            return blake2s256.buildMerkleTree;
         }
         case 'wasmBlake2s256': {
-            return wasmBlake2s256.hashLeaves;
+            return wasmBlake2s256.buildMerkleTree;
         }
         default: {
             throw new TypeError('Invalid hash algorithm');
         }
     }
 }
-exports.getLeafHasher = getLeafHasher;
-function getNodeHasher(algorithm) {
-    switch (algorithm) {
-        case "sha256": {
-            return sha256.hashNodes;
-        }
-        case "blake2s256": {
-            return blake2s256.hashNodes;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.hashNodes;
-        }
-        default: {
-            throw new TypeError('Invalid hash algorithm');
-        }
-    }
-}
-exports.getNodeHasher = getNodeHasher;
+exports.getMerkleTreeBuilder = getMerkleTreeBuilder;
 //# sourceMappingURL=index.js.map

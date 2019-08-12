@@ -12,6 +12,10 @@ const i2Ref = wasm.getInput2Ref();
 const oRef = wasm.getOutputRef();
 const oEnd = oRef + digestSize;
 
+const DOUBLE_INPUT_LENGTH = 2 * digestSize;
+const NULL_BUFFER = Buffer.alloc(digestSize);
+const NULL_PARENT = hash(NULL_BUFFER, NULL_BUFFER);
+
 // PUBLIC FUNCTIONS
 // ================================================================================================
 export function hash(v1: Buffer, v2?: Buffer): Buffer {
@@ -37,21 +41,46 @@ export function hash(v1: Buffer, v2?: Buffer): Buffer {
     }
 }
 
-export function hashLeaves(leaf1: Buffer, leaf2: Buffer, target: Buffer, offset: number): void {
-    wasm.U8.set(leaf1, i1Ref);
-    wasm.U8.set(leaf2, i2Ref);
-    wasm.hash2(i1Ref, i2Ref, oRef);
-    target.set(wasm.U8.slice(oRef, oEnd), offset);
-}
 
-export function hashNodes(nodes: Buffer, offset: number): void {
-    const inputLength = digestSize * 2;
-    const vRef = wasm.newArray(inputLength);
-    for (let tIndex = offset * digestSize; tIndex > 0; tIndex -= digestSize) {
-        let sIndex = tIndex << 1;
-        wasm.U8.set(nodes.slice(sIndex, sIndex + inputLength), vRef);
-        wasm.hash3(vRef, inputLength, oRef);
-        nodes.set(wasm.U8.slice(oRef, oEnd), tIndex);
+export function buildMerkleTree(depth: number, leaves: Buffer[]): ArrayBuffer {
+
+    // allocate memory for tree nodes
+    const nodeCount = 2**depth;
+    const bufferLength = nodeCount * digestSize;
+    const nRef = wasm.newArray(bufferLength);
+    
+    // build first row of internal nodes (parents of leaves)
+    const parentCount = nodeCount / 2;
+    const evenLeafCount = (leaves.length & 1) ? leaves.length - 1 : leaves.length;
+    let i = parentCount;
+    for (let j = 0; j < evenLeafCount; j += 2, i++) {
+        wasm.U8.set(leaves[j], i1Ref);
+        wasm.U8.set(leaves[j + 1], i2Ref);
+        wasm.hash2(i1Ref, i2Ref, nRef + i * digestSize);
     }
-    wasm.__release(vRef);
+
+    // if the number of leaves was odd, process the last leaf
+    if (evenLeafCount !== leaves.length) {
+        wasm.U8.set(leaves[evenLeafCount], i1Ref);
+        wasm.U8.set(NULL_BUFFER, i2Ref);
+        wasm.hash2(i1Ref, i2Ref, nRef + i * digestSize);
+        i++;
+    }
+
+    // if number of leaves was not a power of 2, assume all other leaves are NULL
+    while (i < nodeCount) {
+        wasm.U8.set(NULL_PARENT, nRef + i * digestSize);
+        i++;
+    }
+
+    // calculate all other tree nodes
+    for (let tIndex = (parentCount - 1) * digestSize; tIndex > 0; tIndex -= digestSize) {
+        let sIndex = tIndex << 1;
+        wasm.hash3(nRef + sIndex, DOUBLE_INPUT_LENGTH, nRef + tIndex);
+    }
+
+    // copy the buffer out of WASM memory, free the memory, and return the buffer
+    const nodes = wasm.U8.slice(nRef, nRef + bufferLength);
+    wasm.__release(nRef);
+    return nodes.buffer;
 }
