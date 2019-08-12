@@ -39,7 +39,11 @@ You can use two methods to create a Merkle Tree from a list of values:
 * static **create**(values: `Buffer[]`, hashAlgorithm: `string`): `MerkleTree`
 * static **createAsync**(values: `Buffer[]`, hashAlgorithm: `string`): `Promise<MerkleTree>`
 
-Both methods take an array of values and a name of the hash algorithm to use when building the tree. Currently, only 2 hash algorithms are supported: `sha256` and `blake2s256`.
+Both methods take an array of values and a name of the hash algorithm to use when building the tree. Currently, the following hash algorithms are supported:
+
+* `sha256` - Node's native implementation of SHA256 algorithm.
+* `blake2s256` - Node's native implementation of Blake2s algorithm for 256-bit output.
+* `wasmBlake2s256` - WebAssembly-based implementation of Blake2s algorithm for 256-bit output.
 
 **Note:** async method is currently just a placeholder. All it does is call the sync version and returns the result.
 
@@ -75,6 +79,17 @@ For the batched version use:
 
 * static **verifyBatch**(root: `Buffer`, indexes: `number[]`, proof: `BatchMerkleProof`, hashAlgorithm: `string`): `boolean`<br />
   Similarly to single-index version, this will return `true` if the values in `proof.values` are indeed located at the specified `indexes` in the tree.
+
+## Performance
+Some very informal benchmarks run on Intel Core i5-7300U @ 2.60GHz (single thread) for generating a tree out of 2<sup>20</sup> values:
+
+| Hash Algorithm | Time        |
+| -------------- | ----------- |
+| sha256         | 3.5 seconds |
+| blake2s256     | 3.2 seconds |
+| wasmBlake2s256 | 1 second    |
+
+**Note:** while `wasmBlake256` is much faster at hashing small values (i.e. 32-64 bytes), it is slower at hashing large values. For example, when hashing 1KB values, Node's native implementation of Blake2s is about 30% faster.
 
 ## References
 
