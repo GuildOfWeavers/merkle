@@ -23,7 +23,7 @@ function compile(cb) {
 function asbuild(cb) {
   const source = 'lib/assembly/blake2s.as';
   const target = '/bin/lib/assembly/blake2s.wasm';
-  exec(`npx asc ${source} -b ${target} --sourceMap --validate --importMemory -O3`, function (err, stdout, stderr) {
+  exec(`npx asc ${source} -b ${target} --sourceMap --validate --importMemory --enable bulk-memory -O3`, function (err, stdout, stderr) {
     if (stdout.length > 0) console.log(stdout);
     if (stderr.length > 0) console.error(stderr);
     cb(err);

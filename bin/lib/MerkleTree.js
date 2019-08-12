@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const hash_1 = require("./hash");
+const hashing = require("./hash");
 // CLASS DEFINITION
 // ================================================================================================
 class MerkleTree {
@@ -12,8 +12,9 @@ class MerkleTree {
     }
     static create(values, hashAlgorithm) {
         // determine hash function
-        const hash = hash_1.getHashFunction(hashAlgorithm);
-        const nodeSize = hash_1.getHashDigestSize(hashAlgorithm);
+        const hashLeaves = hashing.getLeafHasher(hashAlgorithm);
+        const hashNodes = hashing.getNodeHasher(hashAlgorithm);
+        const nodeSize = hashing.getHashDigestSize(hashAlgorithm);
         // allocate memory for tree nodes (all internal nodes are stored in a single array buffer)
         const depth = Math.ceil(Math.log2(values.length));
         const nodeCount = 2 ** depth;
@@ -21,23 +22,19 @@ class MerkleTree {
         const nodeBuffer = Buffer.from(nodes);
         // build first row of internal nodes (parents of values)
         const parentCount = nodeCount / 2;
-        let i = parentCount, parent;
+        let i = parentCount;
         for (let j = 0; j < values.length; j += 2, i++) {
             let value1 = values[j];
             let value2 = (j + 1 < values.length) ? values[j + 1] : value1;
-            parent = hash(value1, value2);
-            parent.copy(nodeBuffer, i * nodeSize);
+            hashLeaves(value1, value2, nodeBuffer, i * nodeSize);
         }
         // backfill any remaining parents
         while (i < nodeCount) {
-            parent.copy(nodeBuffer, i * nodeSize);
+            //parent!.copy(nodeBuffer, i * nodeSize);
             i++;
         }
         // calculate all other tree nodes
-        for (let i = parentCount - 1; i > 0; i--) {
-            let n12 = Buffer.from(nodes, 2 * i * nodeSize, 2 * nodeSize);
-            hash(n12).copy(nodeBuffer, i * nodeSize);
-        }
+        hashNodes(nodeBuffer, parentCount - 1);
         return new MerkleTree(nodes, values, depth, nodeSize);
     }
     constructor(nodes, values, depth, nodeSize) {
@@ -131,7 +128,7 @@ class MerkleTree {
     // STATIC METHODS
     // --------------------------------------------------------------------------------------------
     static verify(root, index, proof, hashAlgorithm) {
-        const hash = hash_1.getHashFunction(hashAlgorithm);
+        const hash = hashing.getHashFunction(hashAlgorithm);
         const r = index & 1;
         const value1 = proof[r];
         const value2 = proof[1 - r];
@@ -150,7 +147,7 @@ class MerkleTree {
     }
     static verifyBatch(root, indexes, proof, hashAlgorithm) {
         const v = new Map();
-        const hash = hash_1.getHashFunction(hashAlgorithm);
+        const hash = hashing.getHashFunction(hashAlgorithm);
         // replace odd indexes, offset, and sort in ascending order
         const offset = 2 ** proof.depth;
         const indexMap = mapIndexes(indexes, offset);

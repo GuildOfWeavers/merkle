@@ -13,7 +13,7 @@ const oRef = wasm.getOutputRef();
 const oEnd = oRef + exports.digestSize;
 // PUBLIC FUNCTIONS
 // ================================================================================================
-function wasmBlake2s256(v1, v2) {
+function hash(v1, v2) {
     if (v2 === undefined) {
         if (v1.byteLength === 32) {
             wasm.U8.set(v1, i1Ref);
@@ -35,5 +35,24 @@ function wasmBlake2s256(v1, v2) {
         return Buffer.from(wasm.U8.slice(oRef, oEnd));
     }
 }
-exports.wasmBlake2s256 = wasmBlake2s256;
+exports.hash = hash;
+function hashLeaves(leaf1, leaf2, target, offset) {
+    wasm.U8.set(leaf1, i1Ref);
+    wasm.U8.set(leaf2, i2Ref);
+    wasm.hash2(i1Ref, i2Ref, oRef);
+    target.set(wasm.U8.slice(oRef, oEnd), offset);
+}
+exports.hashLeaves = hashLeaves;
+function hashNodes(nodes, offset) {
+    const inputLength = exports.digestSize * 2;
+    const vRef = wasm.newArray(inputLength);
+    for (let tIndex = offset * exports.digestSize; tIndex > 0; tIndex -= exports.digestSize) {
+        let sIndex = tIndex << 1;
+        wasm.U8.set(nodes.slice(sIndex, sIndex + inputLength), vRef);
+        wasm.hash3(vRef, inputLength, oRef);
+        nodes.set(wasm.U8.slice(oRef, oEnd), tIndex);
+    }
+    wasm.__release(vRef);
+}
+exports.hashNodes = hashNodes;
 //# sourceMappingURL=wasmBlake2s.js.map
