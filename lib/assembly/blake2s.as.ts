@@ -148,6 +148,8 @@ function compress(hRef: usize, last: boolean): void {
     }
 }
 
+// @ts-ignore
+@inline
 function mix(a: u8, b: u8, c: u8, d: u8, xi: u8, yi: u8): void {
 
     let mRef = changetype<usize>(m);

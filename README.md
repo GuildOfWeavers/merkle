@@ -83,11 +83,11 @@ For the batched version use:
 ## Performance
 Some very informal benchmarks run on Intel Core i5-7300U @ 2.60GHz (single thread) for generating a tree out of 2<sup>20</sup> values:
 
-| Hash Algorithm | Time        |
-| -------------- | ----------- |
-| sha256         | 3.5 seconds |
-| blake2s256     | 3.2 seconds |
-| wasmBlake2s256 | 1 second    |
+| Hash Algorithm | Time    |
+| -------------- | ------- |
+| sha256         | 3.5 sec |
+| blake2s256     | 3.2 sec |
+| wasmBlake2s256 | 800 ms  |
 
 **Note:** while `wasmBlake256` is much faster at hashing small values (i.e. 32-64 bytes), it is slower at hashing large values. For example, when hashing 1KB values, Node's native implementation of Blake2s is about 30% faster.
 
