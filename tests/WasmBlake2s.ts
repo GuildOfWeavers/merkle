@@ -108,14 +108,31 @@ export class WasmBlake2s implements Hash {
         */
 
         // calculate all other tree nodes
-        for (let tIndex = (parentCount - 1) * DIGEST_SIZE; tIndex > 0; tIndex -= DIGEST_SIZE) {
-            let sIndex = tIndex << 1;
-            this.wasm.hash3(nRef + sIndex, DOUBLE_INPUT_LENGTH, nRef + tIndex);
-        }
+        let tIndex = (parentCount - 1) * DIGEST_SIZE
+        let sIndex = tIndex << 1;
+        this.hashParents(nRef + sIndex, DOUBLE_INPUT_LENGTH, nRef + tIndex, parentCount);
 
         // copy the buffer out of WASM memory, free the memory, and return the buffer
-        const nodes = Buffer.from(this.wasm.U8.subarray(nRef, nRef + bufferLength));
+        const nodes = Buffer.from(this.wasm.U8.slice(nRef, nRef + bufferLength).buffer);
         this.wasm.__release(nRef);
         return nodes;
+    }
+
+    private hashLeafs(vRef: number, resRef: number, vElementSize: number, vElementCount: number) {
+        const wasm = this.wasm;
+        for (let i = 0; i < vElementCount; i++) {
+            wasm.hash3(vRef, vElementSize, resRef);
+            vRef += vElementSize;
+            resRef += DIGEST_SIZE;
+        }
+    }
+
+    private hashParents(vRef: number, resRef: number, vElementSize: number, vElementCount: number) {
+        const wasm = this.wasm;
+        for (let i = vElementCount - 1; i > 0; i--) {
+            wasm.hash3(vRef, vElementSize, resRef);
+            vRef -= vElementSize;
+            resRef -= DIGEST_SIZE;
+        }
     }
 }
