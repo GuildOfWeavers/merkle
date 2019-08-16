@@ -45,15 +45,11 @@ function buildMerkleTree(depth, leaves) {
     const bufferLength = nodeCount * exports.digestSize;
     const nRef = wasm.newArray(bufferLength);
     // build first row of internal nodes (parents of leaves)
-    const parentCount = nodeCount / 2;
+    let parentCount = nodeCount / 2;
     const evenLeafCount = (leaves.length & 1) ? leaves.length - 1 : leaves.length;
-    let i = parentCount;
-    for (let j = 0; j < evenLeafCount; j += 2, i++) {
-        wasm.U8.set(leaves[j], i1Ref);
-        wasm.U8.set(leaves[j + 1], i2Ref);
-        wasm.hash2(i1Ref, i2Ref, nRef + i * exports.digestSize);
-    }
+    hashLeaves(leaves, nRef + parentCount * exports.digestSize, evenLeafCount);
     // if the number of leaves was odd, process the last leaf
+    let i = parentCount + evenLeafCount;
     if (evenLeafCount !== leaves.length) {
         wasm.U8.set(leaves[evenLeafCount], i1Ref);
         wasm.U8.set(NULL_BUFFER, i2Ref);
@@ -66,14 +62,37 @@ function buildMerkleTree(depth, leaves) {
         i++;
     }
     // calculate all other tree nodes
-    for (let tIndex = (parentCount - 1) * exports.digestSize; tIndex > 0; tIndex -= exports.digestSize) {
-        let sIndex = tIndex << 1;
-        wasm.hash3(nRef + sIndex, DOUBLE_INPUT_LENGTH, nRef + tIndex);
+    let tIndex = (parentCount - 1) * exports.digestSize;
+    let tRef = nRef + tIndex;
+    let sRef = nRef + (tIndex << 1);
+    while (parentCount > 1024) {
+        parentCount = parentCount / 2;
+        hashParents(sRef, tRef, DOUBLE_INPUT_LENGTH, parentCount);
+        tIndex = (parentCount - 1) * exports.digestSize;
+        tRef = nRef + tIndex;
+        sRef = nRef + (tIndex << 1);
     }
+    hashParents(sRef, tRef, DOUBLE_INPUT_LENGTH, parentCount);
     // copy the buffer out of WASM memory, free the memory, and return the buffer
     const nodes = wasm.U8.slice(nRef, nRef + bufferLength);
     wasm.__release(nRef);
     return nodes.buffer;
 }
 exports.buildMerkleTree = buildMerkleTree;
+// HELPER FUNCTIONS
+// ================================================================================================
+function hashLeaves(leaves, resRef, evenLeafCount) {
+    for (let j = 0; j < evenLeafCount; j += 2, resRef += exports.digestSize) {
+        wasm.U8.set(leaves[j], i1Ref);
+        wasm.U8.set(leaves[j + 1], i2Ref);
+        wasm.hash2(i1Ref, i2Ref, resRef);
+    }
+}
+function hashParents(vRef, resRef, vElementSize, vElementCount) {
+    for (let i = vElementCount - 1; i > 0; i--) {
+        wasm.hash3(vRef, vElementSize, resRef);
+        vRef -= vElementSize;
+        resRef -= exports.digestSize;
+    }
+}
 //# sourceMappingURL=wasmBlake2s.js.map

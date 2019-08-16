@@ -8,9 +8,9 @@ import { HashAlgorithm } from '@guildofweavers/merkle';
 // MODULE VARIABLES
 // ================================================================================================
 const iterations = 10;
-const leafCount = 2**18;
+const leafCount = 2**20;
 const branchCount = 2*7;
-const algorithm : HashAlgorithm = 'sha256';
+const algorithm : HashAlgorithm = 'wasmBlake2s256';
 
 // TESTS
 // ================================================================================================
