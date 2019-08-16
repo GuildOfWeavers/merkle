@@ -6,7 +6,7 @@ import { instantiateBlake2s } from '../assembly';
 // ================================================================================================
 export const digestSize = 32;
 
-const wasm = instantiateBlake2s();
+export const wasm = instantiateBlake2s();
 const i1Ref = wasm.getInput1Ref();
 const i2Ref = wasm.getInput2Ref();
 const oRef = wasm.getOutputRef();

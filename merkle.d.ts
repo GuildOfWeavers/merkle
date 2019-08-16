@@ -16,7 +16,7 @@ declare module '@guildofweavers/merkle' {
          * @param values Values that form the leaves of the tree
          * @param hashAlgorithm Algorithm to use for hashing of internal nodes
          */
-        static create(values: Buffer[], hashAlgorithm: HashAlgorithm): MerkleTree;
+        static create(values: Buffer[] | WasmArray, hashAlgorithm: HashAlgorithm): MerkleTree;
 
         /**
          * Returns a Promise for a Merkle tree created from the specified values
@@ -69,5 +69,23 @@ declare module '@guildofweavers/merkle' {
 
     export interface HashFunction {
         (v1: Buffer, v2?: Buffer): Buffer;
+    }
+
+    export interface WasmArray {
+        readonly length         : number;
+        readonly byteLength     : number;
+        readonly elementSize    : number;
+
+        toBuffer(offset?: number, byteLength?: number): Buffer;
+    }
+
+    export interface Hash {
+        readonly algorithm  : HashAlgorithm;
+        readonly digestSize : number;
+
+        digest(value: Buffer): Buffer;
+        merge(a: Buffer, b: Buffer): Buffer;
+
+        buildMerkleNodes(depth: number, leaves: Buffer[]): Buffer;
     }
 }
