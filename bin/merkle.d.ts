@@ -67,9 +67,13 @@ declare module '@guildofweavers/merkle' {
         depth: number;
     }
 
+    // HASHING
+    // --------------------------------------------------------------------------------------------
     export interface HashFunction {
         (v1: Buffer, v2?: Buffer): Buffer;
     }
+
+    export function createHash(algorithm: HashAlgorithm, wasmOptions?: any): Hash;
 
     export interface WasmArray {
         readonly length         : number;

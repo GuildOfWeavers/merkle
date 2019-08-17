@@ -36,8 +36,8 @@ export type WasmBlake2s = loader.ASUtil & {
     hash2(aRef: number, bRef: number, resRef: number): void;
     hash3(vRef: number, vLength: number, resRef: number): void;
 
-    hashValues1(vRef: number, resRef: number, vElementSize: number, vElementCount: number): void;
-    hashValues2(vRef: number, resRef: number, vElementSize: number, vElementCount: number): void;
+    hashValues1(vRef: number, resRef: number, vElementSize: number, vElementCount: number): number;
+    hashValues2(vRef: number, resRef: number, vElementSize: number, vElementCount: number): number;
 }
 
 // PUBLIC MODULE

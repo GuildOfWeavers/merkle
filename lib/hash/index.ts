@@ -1,9 +1,10 @@
 // IMPORTS
 // ================================================================================================
-import { HashAlgorithm, HashFunction } from '@guildofweavers/merkle';
+import { HashAlgorithm, HashFunction, Hash } from '@guildofweavers/merkle';
 import * as sha256 from './sha256';
 import * as blake2s256 from './blake2s';
 import * as wasmBlake2s256 from './wasmBlake2s';
+import { JsHash } from './JsHash';
 
 // INTERFACES
 // ================================================================================================
@@ -11,6 +12,10 @@ export type MerkleTreeBuilder = (depth: number, leaves: Buffer[]) => ArrayBuffer
 
 // PUBLIC FUNCTIONS
 // ================================================================================================
+export function createHash(algorithm: HashAlgorithm): Hash {
+    return new JsHash(algorithm);
+}
+
 export function getHashFunction(algorithm: HashAlgorithm): HashFunction {
     switch (algorithm) {
         case 'sha256': {

@@ -3,8 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const sha256 = require("./sha256");
 const blake2s256 = require("./blake2s");
 const wasmBlake2s256 = require("./wasmBlake2s");
+const JsHash_1 = require("./JsHash");
 // PUBLIC FUNCTIONS
 // ================================================================================================
+function createHash(algorithm) {
+    return new JsHash_1.JsHash(algorithm);
+}
+exports.createHash = createHash;
 function getHashFunction(algorithm) {
     switch (algorithm) {
         case 'sha256': {

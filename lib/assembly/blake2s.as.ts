@@ -106,20 +106,22 @@ export function hash3(vRef: usize, vLength: i32, resRef: usize): void {
     compress(resRef, true);
 }
 
-export function hashValues1(vRef: usize, resRef: usize, vElementSize: i32, vElementCount: i32): void {
+export function hashValues1(vRef: usize, resRef: usize, vElementSize: i32, vElementCount: i32): usize {
     for (let i = 0; i < vElementCount; i++) {
         hash3(vRef, vElementSize, resRef);
         vRef += vElementSize;
         resRef += 32;
     }
+    return resRef;
 }
 
-export function hashValues2(vRef: usize, resRef: usize, vElementSize: i32, vElementCount: i32): void {
+export function hashValues2(vRef: usize, resRef: usize, vElementSize: i32, vElementCount: i32): usize {
     for (let i = vElementCount - 1; i > 0; i--) {
         hash3(vRef, vElementSize, resRef);
         vRef -= vElementSize;
         resRef -= 32;
     }
+    return resRef;
 }
 
 // INTERNAL FUNCTIONS
