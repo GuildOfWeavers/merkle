@@ -1,8 +1,7 @@
 import { WasmArray } from './WasmArray';
 import { randomBytes } from 'crypto';
-import { buildMerkleTree, hash } from '../lib/hash/blake2s';
 import { JsHash } from '../lib/hash/JsHash';
-import { WasmBlake2s } from './WasmBlake2s';
+import { WasmBlake2s } from '../lib/hash/WasmBlake2s';
 
 const memory = new WebAssembly.Memory({ initial: 2000 });
 
@@ -24,11 +23,9 @@ for (let i = 0; i < elementCount; i++) {
 
 const h1 = wasmBlake2s.digest(controls[0]);
 const h2 = jsHash.digest(controls[0]);
-const h3 = hash(controls[0]);
 
 const m1 = wasmBlake2s.merge(controls[0], controls[1]);
 const m2 = jsHash.merge(controls[0], controls[1]);
-const m3 = hash(controls[0], controls[1]);
 
 const values = new WasmArray(memory, bRef, elementCount, elementSize);
 console.log(values.toBuffer().byteLength);
@@ -40,13 +37,6 @@ for (let i = 0; i < 10; i++) {
 }
 console.timeEnd('v1');
 
-let v2: Buffer;
-console.time('v2');
-for (let i = 0; i < 10; i++) {
-    v2 = Buffer.from(buildMerkleTree(depth, controls));
-}
-console.timeEnd('v2');
-
 let v3: Buffer;
 console.time('v3');
 for (let i = 0; i < 10; i++) {
@@ -54,6 +44,5 @@ for (let i = 0; i < 10; i++) {
 }
 console.timeEnd('v3');
 
-console.log(v1!.equals(v2!));
 console.log(v1!.equals(v3!));
 console.log(wasmBlake2s.wasm.U8.byteLength / 1024 / 1024);

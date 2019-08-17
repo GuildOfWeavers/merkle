@@ -2,12 +2,6 @@ declare module '@guildofweavers/merkle' {
 
     /** Algorithms that can be used to hash internal tree nodes */
     export type HashAlgorithm = 'sha256' | 'blake2s256' | 'wasmBlake2s256';
-    
-    /** Returns digest size (in bytes) for the specified hash algorithm */
-    export function getHashDigestSize(hashAlgorithm: HashAlgorithm): number;
-
-    /** Returns a hash function for the specified algorithm */
-    export function getHashFunction(hashAlgorithm: HashAlgorithm): HashFunction;
 
     export class MerkleTree {
 
@@ -69,11 +63,11 @@ declare module '@guildofweavers/merkle' {
 
     // HASHING
     // --------------------------------------------------------------------------------------------
-    export interface HashFunction {
-        (v1: Buffer, v2?: Buffer): Buffer;
-    }
-
     export function createHash(algorithm: HashAlgorithm, wasmOptions?: any): Hash;
+
+    export interface WasmOptions {
+        readonly memory: WebAssembly.Memory;
+    }
 
     export interface WasmArray {
         readonly length         : number;

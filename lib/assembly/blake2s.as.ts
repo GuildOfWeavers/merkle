@@ -22,18 +22,8 @@ let t: u64 = 0;
 
 // INPUTS / OUTPUTS
 // ================================================================================================
-let _input1 = new ArrayBuffer(32);
-let _input2 = new ArrayBuffer(32);
 let _output = new ArrayBuffer(32);
 let _inputs = new ArrayBuffer(1024);
-
-export function getInput1Ref(): usize {
-    return changetype<usize>(_input1);
-}
-
-export function getInput2Ref(): usize {
-    return changetype<usize>(_input2);
-}
 
 export function getInputsRef(): usize {
     return changetype<usize>(_inputs);
@@ -49,39 +39,7 @@ export function newArray(length: i32): ArrayBuffer {
 
 // PUBLIC FUNCTIONS
 // ================================================================================================
-export function hash1(vRef: usize, resRef: usize): void {
-
-    // initialize the context
-    store<u32>(resRef, 0x6b08e647);   // h[0] = IV[0] ^ 0x01010000 ^ 0 ^ 32;
-    memory.copy(resRef + 4, changetype<usize>(IV) + 4, 28);
-    t = 32;
-
-    // copy input into the buffer
-    let mRef = changetype<usize>(m);
-    memory.copy(mRef, vRef, 32);
-    memory.fill(mRef + 32, 0, 32);
-    
-    // run compression function and store result under resRef
-    compress(resRef, true);
-}
-
-export function hash2(xRef: usize, yRef: usize, resRef: usize): void {
-
-    // initialize the context
-    store<u32>(resRef, 0x6b08e647);   // h[0] = IV[0] ^ 0x01010000 ^ 0 ^ 32;
-    memory.copy(resRef + 4, changetype<usize>(IV) + 4, 28);
-    t = 64;
-
-    // copy input into the buffer
-    let mRef = changetype<usize>(m);
-    memory.copy(mRef, xRef, 32);
-    memory.copy(mRef + 32, yRef, 32);
-    
-    // run compression function and store result under resRef
-    compress(resRef, true);
-}
-
-export function hash3(vRef: usize, vLength: i32, resRef: usize): void {
+export function hash(vRef: usize, vLength: i32, resRef: usize): void {
 
     // initialize the context
     store<u32>(resRef, 0x6b08e647);   // h[0] = IV[0] ^ 0x01010000 ^ 0 ^ 32;
@@ -108,7 +66,7 @@ export function hash3(vRef: usize, vLength: i32, resRef: usize): void {
 
 export function hashValues1(vRef: usize, resRef: usize, vElementSize: i32, vElementCount: i32): usize {
     for (let i = 0; i < vElementCount; i++) {
-        hash3(vRef, vElementSize, resRef);
+        hash(vRef, vElementSize, resRef);
         vRef += vElementSize;
         resRef += 32;
     }
@@ -117,7 +75,7 @@ export function hashValues1(vRef: usize, resRef: usize, vElementSize: i32, vElem
 
 export function hashValues2(vRef: usize, resRef: usize, vElementSize: i32, vElementCount: i32): usize {
     for (let i = vElementCount - 1; i > 0; i--) {
-        hash3(vRef, vElementSize, resRef);
+        hash(vRef, vElementSize, resRef);
         vRef -= vElementSize;
         resRef -= 32;
     }

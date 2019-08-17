@@ -26,15 +26,11 @@ const SIGMA = [
 export type WasmBlake2s = loader.ASUtil & {
     getSigmaRef(): number;
     getIvRef(): number;
-    getInput1Ref(): number;
-    getInput2Ref(): number;
     getInputsRef(): number; 
     getOutputRef(): number;
     newArray(length: number): number;
     
-    hash1(vRef: number, resRef: number): void;
-    hash2(aRef: number, bRef: number, resRef: number): void;
-    hash3(vRef: number, vLength: number, resRef: number): void;
+    hash(vRef: number, vLength: number, resRef: number): void;
 
     hashValues1(vRef: number, resRef: number, vElementSize: number, vElementCount: number): number;
     hashValues2(vRef: number, resRef: number, vElementSize: number, vElementCount: number): number;

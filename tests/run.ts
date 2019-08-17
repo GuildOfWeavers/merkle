@@ -10,7 +10,7 @@ import { HashAlgorithm } from '@guildofweavers/merkle';
 const iterations = 10;
 const leafCount = 2**18;
 const branchCount = 2*7;
-const algorithm : HashAlgorithm = 'sha256';
+const algorithm : HashAlgorithm = 'blake2s256';
 
 // TESTS
 // ================================================================================================

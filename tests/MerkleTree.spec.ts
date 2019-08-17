@@ -1,24 +1,24 @@
 import { expect } from 'chai';
 
 import { MerkleTree } from '../lib/MerkleTree';
-import { getHashFunction } from '../lib/hash';
+import { createHash } from '../lib/hash';
 
 const hashAlgorithm = 'sha256';
-const hashFn = getHashFunction(hashAlgorithm);
+const hash = createHash(hashAlgorithm);
 
 const leafCount = 8;
 const elements = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ];
 const bElements = elements.map(e => Buffer.from(e));
 
-const h12 = hashFn(Buffer.from(elements[0] + elements[1]));
-const h34 = hashFn(Buffer.from(elements[2] + elements[3]));
-const h56 = hashFn(Buffer.from(elements[4] + elements[5]));
-const h78 = hashFn(Buffer.from(elements[6] + elements[7]));
+const h12 = hash.digest(Buffer.from(elements[0] + elements[1]));
+const h34 = hash.digest(Buffer.from(elements[2] + elements[3]));
+const h56 = hash.digest(Buffer.from(elements[4] + elements[5]));
+const h78 = hash.digest(Buffer.from(elements[6] + elements[7]));
 
-const h1234 = hashFn(h12, h34);
-const h5678 = hashFn(h56, h78);
+const h1234 = hash.merge(h12, h34);
+const h5678 = hash.merge(h56, h78);
 
-const hRoot = hashFn(h1234, h5678);
+const hRoot = hash.merge(h1234, h5678);
 
 const root = hRoot.toString();
 

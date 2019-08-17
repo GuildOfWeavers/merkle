@@ -11,11 +11,10 @@ class MerkleTree {
         return MerkleTree.create(values, hashAlgorithm);
     }
     static create(values, hashAlgorithm) {
-        const buildTree = hashing.getMerkleTreeBuilder(hashAlgorithm);
-        const nodeSize = hashing.getHashDigestSize(hashAlgorithm);
+        const hash = hashing.createHash(hashAlgorithm);
         const depth = Math.ceil(Math.log2(values.length));
-        const nodes = buildTree(depth, values);
-        return new MerkleTree(nodes, values, depth, nodeSize);
+        const nodes = hash.buildMerkleNodes(depth, values);
+        return new MerkleTree(nodes, values, depth, hash.digestSize);
     }
     constructor(nodes, values, depth, nodeSize) {
         this.depth = depth;
@@ -108,18 +107,18 @@ class MerkleTree {
     // STATIC METHODS
     // --------------------------------------------------------------------------------------------
     static verify(root, index, proof, hashAlgorithm) {
-        const hash = hashing.getHashFunction(hashAlgorithm);
+        const hash = hashing.createHash(hashAlgorithm);
         const r = index & 1;
         const value1 = proof[r];
         const value2 = proof[1 - r];
-        let v = hash(value1, value2);
+        let v = hash.merge(value1, value2);
         index = (index + 2 ** (proof.length - 1)) >> 1;
         for (let i = 2; i < proof.length; i++) {
             if (index & 1) {
-                v = hash(proof[i], v);
+                v = hash.merge(proof[i], v);
             }
             else {
-                v = hash(v, proof[i]);
+                v = hash.merge(v, proof[i]);
             }
             index = index >> 1;
         }
@@ -127,7 +126,7 @@ class MerkleTree {
     }
     static verifyBatch(root, indexes, proof, hashAlgorithm) {
         const v = new Map();
-        const hash = hashing.getHashFunction(hashAlgorithm);
+        const hash = hashing.createHash(hashAlgorithm);
         // replace odd indexes, offset, and sort in ascending order
         const offset = 2 ** proof.depth;
         const indexMap = mapIndexes(indexes, offset - 1);
@@ -159,7 +158,7 @@ class MerkleTree {
                 v2 = proof.values[inputIndex2];
                 proofPointers[i] = 1;
             }
-            let parent = hash(v1, v2);
+            let parent = hash.merge(v1, v2);
             let parentIndex = (offset + index >> 1);
             v.set(parentIndex, parent);
             nextIndexes.push(parentIndex);
@@ -187,7 +186,7 @@ class MerkleTree {
                 if (node === undefined || sibling === undefined)
                     return false;
                 // calculate parent node and add it to the next set of nodes
-                let parent = (nodeIndex & 1) ? hash(sibling, node) : hash(node, sibling);
+                let parent = (nodeIndex & 1) ? hash.merge(sibling, node) : hash.merge(node, sibling);
                 let parentIndex = nodeIndex >> 1;
                 v.set(parentIndex, parent);
                 nextIndexes.push(parentIndex);
