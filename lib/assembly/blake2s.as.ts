@@ -25,6 +25,7 @@ let t: u64 = 0;
 let _input1 = new ArrayBuffer(32);
 let _input2 = new ArrayBuffer(32);
 let _output = new ArrayBuffer(32);
+let _inputs = new ArrayBuffer(1024);
 
 export function getInput1Ref(): usize {
     return changetype<usize>(_input1);
@@ -32,6 +33,10 @@ export function getInput1Ref(): usize {
 
 export function getInput2Ref(): usize {
     return changetype<usize>(_input2);
+}
+
+export function getInputsRef(): usize {
+    return changetype<usize>(_inputs);
 }
 
 export function getOutputRef(): usize {
@@ -99,6 +104,22 @@ export function hash3(vRef: usize, vLength: i32, resRef: usize): void {
     memory.fill(mRef + vLength, 0, 64 - vLength);
     t += vLength;
     compress(resRef, true);
+}
+
+export function hashValues1(vRef: usize, resRef: usize, vElementSize: i32, vElementCount: i32): void {
+    for (let i = 0; i < vElementCount; i++) {
+        hash3(vRef, vElementSize, resRef);
+        vRef += vElementSize;
+        resRef += 32;
+    }
+}
+
+export function hashValues2(vRef: usize, resRef: usize, vElementSize: i32, vElementCount: i32): void {
+    for (let i = vElementCount - 1; i > 0; i--) {
+        hash3(vRef, vElementSize, resRef);
+        vRef -= vElementSize;
+        resRef -= 32;
+    }
 }
 
 // INTERNAL FUNCTIONS

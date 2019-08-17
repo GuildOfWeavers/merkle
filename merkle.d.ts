@@ -86,6 +86,6 @@ declare module '@guildofweavers/merkle' {
         digest(value: Buffer): Buffer;
         merge(a: Buffer, b: Buffer): Buffer;
 
-        buildMerkleNodes(depth: number, leaves: Buffer[]): Buffer;
+        buildMerkleNodes(depth: number, leaves: Buffer[] | WasmArray): ArrayBuffer;
     }
 }
