@@ -19,7 +19,7 @@ declare module '@guildofweavers/merkle' {
         digest(value: Buffer): Buffer;
         merge(a: Buffer, b: Buffer): Buffer;
 
-        buildMerkleNodes(depth: number, leaves: Buffer[] | WasmArray): ArrayBuffer;
+        buildMerkleNodes(depth: number, leaves: Buffer[] | Vector): ArrayBuffer;
     }
 
     // MERKLE TREE
@@ -31,20 +31,20 @@ declare module '@guildofweavers/merkle' {
          * @param values Values that form the leaves of the tree
          * @param hash Hash object to use for hashing of internal nodes
          */
-        static create(values: Buffer[] | WasmArray, hash: Hash): MerkleTree;
+        static create(values: Buffer[] | Vector, hash: Hash): MerkleTree;
 
         /**
          * Returns a Promise for a Merkle tree created from the specified values
          * @param values Values that form the leaves of the tree
          * @param hash Hash object to use for hashing of internal nodes
          */
-        static createAsync(values: Buffer[] | WasmArray, hash: Hash): Promise<MerkleTree>;
+        static createAsync(values: Buffer[] | Vector, hash: Hash): Promise<MerkleTree>;
 
         /** Root of the tree */
         readonly root: Buffer;
 
-        /** Leaves of the tree */
-        readonly values: Buffer[];
+        /** Returns a leaf node located at the specified index */
+        getLeaf(index: number): Buffer;
 
         /** Returns a Merkle proof for a single leaf at the specified index */
         prove(index: number): Buffer[];
@@ -84,11 +84,11 @@ declare module '@guildofweavers/merkle' {
 
     // INTERNAL DATA STRUCTURES
     // --------------------------------------------------------------------------------------------
-    export interface WasmArray {
+    export interface Vector {
         readonly length         : number;
         readonly byteLength     : number;
         readonly elementSize    : number;
 
-        toBuffer(offset?: number, byteLength?: number): Buffer;
+        toBuffer(startIdx?: number, elementCount?: number): Buffer;
     }
 }

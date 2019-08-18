@@ -1,6 +1,7 @@
 // IMPORTS
 // ================================================================================================
-import { BatchMerkleProof, Hash } from '@guildofweavers/merkle';
+import { BatchMerkleProof, Hash, Vector } from '@guildofweavers/merkle';
+import { JsVector } from './JsVector';
 
 // CLASS DEFINITION
 // ================================================================================================
@@ -8,33 +9,42 @@ export class MerkleTree {
 
     readonly depth      : number;
     readonly nodes      : ArrayBuffer;
-    readonly values     : Buffer[];
+    readonly values     : Vector;
     readonly nodeSize   : number;
 
     // CONSTRUCTORS
     // --------------------------------------------------------------------------------------------
-    static async createAsync(values: Buffer[], hash: Hash) {
+    static async createAsync(values: Buffer[] | Vector, hash: Hash) {
         // FUTURE: implement asynchronous instantiation
         return MerkleTree.create(values, hash);
     }
 
-    static create(values: Buffer[], hash: Hash) {
+    static create(values: Buffer[] | Vector, hash: Hash) {
         const depth = Math.ceil(Math.log2(values.length));
         const nodes = hash.buildMerkleNodes(depth, values)
         return new MerkleTree(nodes, values, depth, hash.digestSize);
     }
 
-    private constructor(nodes: ArrayBuffer, values: Buffer[], depth: number, nodeSize: number) {
+    private constructor(nodes: ArrayBuffer, values: Buffer[] | Vector, depth: number, nodeSize: number) {
         this.depth = depth;
         this.nodes = nodes;
-        this.values = values;
         this.nodeSize = nodeSize;
+        if (Array.isArray(values)) {
+            this.values = new JsVector(values);
+        }
+        else {
+            this.values = values;
+        }
     }
 
     // PUBLIC ACCESSORS
     // --------------------------------------------------------------------------------------------
     get root(): Buffer {
         return Buffer.from(this.nodes, this.nodeSize, this.nodeSize);
+    }
+
+    getLeaf(index: number): Buffer {
+        return this.values.toBuffer(index, 1);
     }
 
     // PUBLIC METHODS
@@ -47,8 +57,8 @@ export class MerkleTree {
         const nodeSize = this.nodeSize;
         const nodeCount = this.nodes.byteLength / nodeSize;
 
-        const value1 = this.values[index];
-        const value2 = this.values[index ^ 1];
+        const value1 = this.values.toBuffer(index, 1);
+        const value2 = this.values.toBuffer(index ^ 1, 1);
         const proof = [value1, value2];
 
         index = (index + nodeCount) >> 1;
@@ -77,8 +87,8 @@ export class MerkleTree {
         let nextIndexes = [];
         for (let i = 0; i < indexes.length; i++) {
             let index = indexes[i];
-            let v1 = this.values[index]
-            let v2 = this.values[index + 1];
+            let v1 = this.values.toBuffer(index, 1);
+            let v2 = this.values.toBuffer(index + 1, 1);
 
             // only values for indexes that were explicitly requested are included in values array
             const inputIndex1 = indexMap.get(index);

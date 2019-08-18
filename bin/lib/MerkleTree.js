@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const JsVector_1 = require("./JsVector");
 // CLASS DEFINITION
 // ================================================================================================
 class MerkleTree {
@@ -17,13 +18,21 @@ class MerkleTree {
     constructor(nodes, values, depth, nodeSize) {
         this.depth = depth;
         this.nodes = nodes;
-        this.values = values;
         this.nodeSize = nodeSize;
+        if (Array.isArray(values)) {
+            this.values = new JsVector_1.JsVector(values);
+        }
+        else {
+            this.values = values;
+        }
     }
     // PUBLIC ACCESSORS
     // --------------------------------------------------------------------------------------------
     get root() {
         return Buffer.from(this.nodes, this.nodeSize, this.nodeSize);
+    }
+    getLeaf(index) {
+        return this.values.toBuffer(index, 1);
     }
     // PUBLIC METHODS
     // --------------------------------------------------------------------------------------------
@@ -36,8 +45,8 @@ class MerkleTree {
             throw new TypeError(`Invalid index: ${index}`);
         const nodeSize = this.nodeSize;
         const nodeCount = this.nodes.byteLength / nodeSize;
-        const value1 = this.values[index];
-        const value2 = this.values[index ^ 1];
+        const value1 = this.values.toBuffer(index, 1);
+        const value2 = this.values.toBuffer(index ^ 1, 1);
         const proof = [value1, value2];
         index = (index + nodeCount) >> 1;
         while (index > 1) {
@@ -61,8 +70,8 @@ class MerkleTree {
         let nextIndexes = [];
         for (let i = 0; i < indexes.length; i++) {
             let index = indexes[i];
-            let v1 = this.values[index];
-            let v2 = this.values[index + 1];
+            let v1 = this.values.toBuffer(index, 1);
+            let v2 = this.values.toBuffer(index + 1, 1);
             // only values for indexes that were explicitly requested are included in values array
             const inputIndex1 = indexMap.get(index);
             const inputIndex2 = indexMap.get(index + 1);

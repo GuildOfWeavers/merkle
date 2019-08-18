@@ -1,7 +1,7 @@
 // IMPORTS
 // ================================================================================================
-import { Hash, HashAlgorithm, WasmArray } from "@guildofweavers/merkle";
 import * as crypto from 'crypto';
+import { Hash, HashAlgorithm, Vector } from "@guildofweavers/merkle";
 
 // MODULE VARIABLES
 // ================================================================================================
@@ -42,7 +42,7 @@ export class JsHash implements Hash {
         return hash.digest();
     }
 
-    buildMerkleNodes(depth: number, leaves: Buffer[] | WasmArray): ArrayBuffer {
+    buildMerkleNodes(depth: number, leaves: Vector | Buffer[]): ArrayBuffer {
 
         // allocate memory for tree nodes
         const nodeCount = 2**depth;

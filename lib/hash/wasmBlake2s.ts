@@ -1,6 +1,6 @@
 // IMPORTS
 // ================================================================================================
-import { Hash, HashAlgorithm, WasmArray } from "@guildofweavers/merkle";
+import { Hash, HashAlgorithm, Vector } from "@guildofweavers/merkle";
 import { instantiateBlake2s, WasmBlake2s as Blake2sWasm } from '../assembly';
 
 // MODULE VARIABLES
@@ -59,7 +59,7 @@ export class WasmBlake2s implements Hash {
         return Buffer.from(this.wasm.U8.subarray(this.oRef, this.oEnd));
     }
 
-    buildMerkleNodes(depth: number, leaves: Buffer[] | WasmArray): ArrayBuffer {
+    buildMerkleNodes(depth: number, leaves: Vector | Buffer[]): ArrayBuffer {
 
         const wasm = this.wasm, iRef = this.iRef;
 

@@ -1,6 +1,6 @@
-import { WasmArray as IWasmArray } from '@guildofweavers/merkle';
+import { Vector } from '@guildofweavers/merkle';
 
-export class WasmArray implements IWasmArray {
+export class WasmVector implements Vector {
 
     readonly memory     : WebAssembly.Memory;
     readonly base       : number;
@@ -22,11 +22,16 @@ export class WasmArray implements IWasmArray {
         return Buffer.from(this.memory.buffer, this.base + index * this.elementSize, this.elementSize);
     }
 
-    toBuffer(offset = 0, byteLength?: number): Buffer {
-        const start = this.base + offset;
-        if (byteLength === undefined) {
-            byteLength = (this.base + this.byteLength) - start;
+    toBuffer(startIdx = 0, elementCount?: number): Buffer {
+        
+        const offset = this.base + startIdx * this.elementSize;
+        let length: number;
+        if (elementCount === undefined) {
+            length = (this.base + this.byteLength) - offset;
         }
-        return Buffer.from(this.memory.buffer, start, byteLength);
+        else {
+            length = elementCount * this.elementSize;
+        }
+        return Buffer.from(this.memory.buffer, offset, length);
     }
 }
