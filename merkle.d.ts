@@ -1,23 +1,44 @@
 declare module '@guildofweavers/merkle' {
 
-    /** Algorithms that can be used to hash internal tree nodes */
-    export type HashAlgorithm = 'sha256' | 'blake2s256' | 'wasmBlake2s256';
+    // HASHING
+    // --------------------------------------------------------------------------------------------
+    export type HashAlgorithm = 'sha256' | 'blake2s256';
 
+    export function createHash(algorithm: HashAlgorithm): Hash;
+    export function createHash(algorithm: HashAlgorithm, wasm: boolean): Hash;
+    export function createHash(algorithm: HashAlgorithm, options: Partial<WasmOptions>): Hash;
+
+    export interface WasmOptions {
+        readonly memory: WebAssembly.Memory;
+    }
+
+    export interface Hash {
+        readonly algorithm  : HashAlgorithm;
+        readonly digestSize : number;
+
+        digest(value: Buffer): Buffer;
+        merge(a: Buffer, b: Buffer): Buffer;
+
+        buildMerkleNodes(depth: number, leaves: Buffer[] | WasmArray): ArrayBuffer;
+    }
+
+    // MERKLE TREE
+    // --------------------------------------------------------------------------------------------
     export class MerkleTree {
 
         /**
          * Returns a Merkle tree created from the specified values
          * @param values Values that form the leaves of the tree
-         * @param hashAlgorithm Algorithm to use for hashing of internal nodes
+         * @param hash Hash object to use for hashing of internal nodes
          */
-        static create(values: Buffer[] | WasmArray, hashAlgorithm: HashAlgorithm): MerkleTree;
+        static create(values: Buffer[] | WasmArray, hash: Hash): MerkleTree;
 
         /**
          * Returns a Promise for a Merkle tree created from the specified values
          * @param values Values that form the leaves of the tree
-         * @param hashAlgorithm Algorithm to use for hashing of internal nodes
+         * @param hash Hash object to use for hashing of internal nodes
          */
-        static createAsync(values: Buffer[], hashAlgorithm: HashAlgorithm): Promise<MerkleTree>;
+        static createAsync(values: Buffer[] | WasmArray, hash: Hash): Promise<MerkleTree>;
 
         /** Root of the tree */
         readonly root: Buffer;
@@ -36,18 +57,18 @@ declare module '@guildofweavers/merkle' {
          * @param root Root of the Merkle tree
          * @param index Index of a leaf to verify
          * @param proof Merkle proof for the leaf at the specified index
-         * @param hashAlgorithm Algorithm used for hashing of internal nodes
+         * @param hash Hash object to use for hashing of internal nodes
          */
-        static verify(root: Buffer, index: number, proof: Buffer[], hashAlgorithm: HashAlgorithm): boolean;
+        static verify(root: Buffer, index: number, proof: Buffer[], hash: Hash): boolean;
 
         /**
          * Verifies Merkle proof for a list of indexes
          * @param root Root of the Merkle tree
          * @param index Indexes of leaves to verify
          * @param proof Compressed Merkle proof for the leaves at the specified indexes
-         * @param hashAlgorithm Algorithm used for hashing of internal nodes
+         * @param hash Hash object to use for hashing of internal nodes
          */
-        static verifyBatch(root: Buffer, indexes: number[], proof: BatchMerkleProof, hashAlgorithm: HashAlgorithm): boolean;
+        static verifyBatch(root: Buffer, indexes: number[], proof: BatchMerkleProof, hash: Hash): boolean;
     }
 
     export interface BatchMerkleProof {
@@ -61,29 +82,13 @@ declare module '@guildofweavers/merkle' {
         depth: number;
     }
 
-    // HASHING
+    // INTERNAL DATA STRUCTURES
     // --------------------------------------------------------------------------------------------
-    export function createHash(algorithm: HashAlgorithm, wasmOptions?: any): Hash;
-
-    export interface WasmOptions {
-        readonly memory: WebAssembly.Memory;
-    }
-
     export interface WasmArray {
         readonly length         : number;
         readonly byteLength     : number;
         readonly elementSize    : number;
 
         toBuffer(offset?: number, byteLength?: number): Buffer;
-    }
-
-    export interface Hash {
-        readonly algorithm  : HashAlgorithm;
-        readonly digestSize : number;
-
-        digest(value: Buffer): Buffer;
-        merge(a: Buffer, b: Buffer): Buffer;
-
-        buildMerkleNodes(depth: number, leaves: Buffer[] | WasmArray): ArrayBuffer;
     }
 }

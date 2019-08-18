@@ -1,17 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const hashing = require("./hash");
 // CLASS DEFINITION
 // ================================================================================================
 class MerkleTree {
     // CONSTRUCTORS
     // --------------------------------------------------------------------------------------------
-    static async createAsync(values, hashAlgorithm) {
+    static async createAsync(values, hash) {
         // FUTURE: implement asynchronous instantiation
-        return MerkleTree.create(values, hashAlgorithm);
+        return MerkleTree.create(values, hash);
     }
-    static create(values, hashAlgorithm) {
-        const hash = hashing.createHash(hashAlgorithm);
+    static create(values, hash) {
         const depth = Math.ceil(Math.log2(values.length));
         const nodes = hash.buildMerkleNodes(depth, values);
         return new MerkleTree(nodes, values, depth, hash.digestSize);
@@ -106,8 +104,7 @@ class MerkleTree {
     }
     // STATIC METHODS
     // --------------------------------------------------------------------------------------------
-    static verify(root, index, proof, hashAlgorithm) {
-        const hash = hashing.createHash(hashAlgorithm);
+    static verify(root, index, proof, hash) {
         const r = index & 1;
         const value1 = proof[r];
         const value2 = proof[1 - r];
@@ -124,9 +121,8 @@ class MerkleTree {
         }
         return root.equals(v);
     }
-    static verifyBatch(root, indexes, proof, hashAlgorithm) {
+    static verifyBatch(root, indexes, proof, hash) {
         const v = new Map();
-        const hash = hashing.createHash(hashAlgorithm);
         // replace odd indexes, offset, and sort in ascending order
         const offset = 2 ** proof.depth;
         const indexMap = mapIndexes(indexes, offset - 1);

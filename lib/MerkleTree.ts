@@ -1,7 +1,6 @@
 // IMPORTS
 // ================================================================================================
-import { BatchMerkleProof, HashAlgorithm } from '@guildofweavers/merkle';
-import * as hashing from './hash';
+import { BatchMerkleProof, Hash } from '@guildofweavers/merkle';
 
 // CLASS DEFINITION
 // ================================================================================================
@@ -14,17 +13,14 @@ export class MerkleTree {
 
     // CONSTRUCTORS
     // --------------------------------------------------------------------------------------------
-    static async createAsync(values: Buffer[], hashAlgorithm: HashAlgorithm) {
+    static async createAsync(values: Buffer[], hash: Hash) {
         // FUTURE: implement asynchronous instantiation
-        return MerkleTree.create(values, hashAlgorithm);
+        return MerkleTree.create(values, hash);
     }
 
-    static create(values: Buffer[], hashAlgorithm: HashAlgorithm) {
-        
-        const hash = hashing.createHash(hashAlgorithm);
+    static create(values: Buffer[], hash: Hash) {
         const depth = Math.ceil(Math.log2(values.length));
         const nodes = hash.buildMerkleNodes(depth, values)
-
         return new MerkleTree(nodes, values, depth, hash.digestSize);
     }
 
@@ -131,8 +127,7 @@ export class MerkleTree {
 
     // STATIC METHODS
     // --------------------------------------------------------------------------------------------
-    static verify(root: Buffer, index: number, proof: Buffer[], hashAlgorithm: HashAlgorithm): boolean {
-        const hash = hashing.createHash(hashAlgorithm);
+    static verify(root: Buffer, index: number, proof: Buffer[], hash: Hash): boolean {
 
         const r = index & 1;
         const value1 = proof[r];
@@ -153,9 +148,8 @@ export class MerkleTree {
         return root.equals(v);
     }
 
-    static verifyBatch(root: Buffer, indexes: number[], proof: BatchMerkleProof, hashAlgorithm: HashAlgorithm): boolean {
+    static verifyBatch(root: Buffer, indexes: number[], proof: BatchMerkleProof, hash: Hash): boolean {
         const v = new Map<number,Buffer>();
-        const hash = hashing.createHash(hashAlgorithm);
 
         // replace odd indexes, offset, and sort in ascending order
         const offset = 2 ** proof.depth;

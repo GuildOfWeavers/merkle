@@ -2,11 +2,19 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const WasmBlake2s_1 = require("./WasmBlake2s");
 const JsHash_1 = require("./JsHash");
-// PUBLIC FUNCTIONS
-// ================================================================================================
-function createHash(algorithm, options) {
-    if (options) {
-        return new WasmBlake2s_1.WasmBlake2s(options.memory);
+function createHash(algorithm, optionsOrWasm) {
+    if (optionsOrWasm) {
+        const wasmOptions = (typeof optionsOrWasm === 'boolean')
+            ? {}
+            : optionsOrWasm;
+        switch (algorithm) {
+            case 'blake2s256': {
+                return new WasmBlake2s_1.WasmBlake2s(wasmOptions.memory);
+            }
+            default: {
+                throw new Error(`WASM-optimization for ${algorithm} hash is not supported`);
+            }
+        }
     }
     else {
         return new JsHash_1.JsHash(algorithm);

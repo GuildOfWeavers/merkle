@@ -6,9 +6,23 @@ import { JsHash } from './JsHash';
 
 // PUBLIC FUNCTIONS
 // ================================================================================================
-export function createHash(algorithm: HashAlgorithm, options?: WasmOptions): Hash {
-    if (options) {
-        return new WasmBlake2s(options.memory);
+export function createHash(algorithm: HashAlgorithm): Hash
+export function createHash(algorithm: HashAlgorithm, wasm: boolean): Hash
+export function createHash(algorithm: HashAlgorithm, options: Partial<WasmOptions>): Hash
+export function createHash(algorithm: HashAlgorithm, optionsOrWasm?: Partial<WasmOptions> | boolean): Hash {
+    if (optionsOrWasm) {
+        const wasmOptions = (typeof optionsOrWasm === 'boolean')
+            ? {}
+            : optionsOrWasm;
+
+        switch (algorithm) {
+            case 'blake2s256': {
+                return new WasmBlake2s(wasmOptions.memory);
+            }
+            default: {
+                throw new Error(`WASM-optimization for ${algorithm} hash is not supported`);
+            }
+        }
     }
     else {
         return new JsHash(algorithm);
