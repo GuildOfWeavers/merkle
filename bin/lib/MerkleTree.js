@@ -12,19 +12,15 @@ class MerkleTree {
     }
     static create(values, hash) {
         const depth = Math.ceil(Math.log2(values.length));
-        const nodes = hash.buildMerkleNodes(depth, values);
-        return new MerkleTree(nodes, values, depth, hash.digestSize);
+        const leaves = Array.isArray(values) ? new JsVector_1.JsVector(values) : values;
+        const nodes = hash.buildMerkleNodes(depth, leaves);
+        return new MerkleTree(nodes, leaves, depth, hash.digestSize);
     }
-    constructor(nodes, values, depth, nodeSize) {
+    constructor(nodes, leaves, depth, nodeSize) {
         this.depth = depth;
         this.nodes = nodes;
         this.nodeSize = nodeSize;
-        if (Array.isArray(values)) {
-            this.values = new JsVector_1.JsVector(values);
-        }
-        else {
-            this.values = values;
-        }
+        this.values = leaves;
     }
     // PUBLIC ACCESSORS
     // --------------------------------------------------------------------------------------------

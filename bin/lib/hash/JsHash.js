@@ -39,40 +39,22 @@ class JsHash {
         const nodeCount = 2 ** depth;
         const nodes = new ArrayBuffer(nodeCount * DIGEST_SIZE);
         const nodeBuffer = Buffer.from(nodes);
-        // build first row of internal nodes (parents of values)
+        // build first row of internal nodes (parents of leaves)
         const parentCount = nodeCount / 2;
         const evenLeafCount = (leaves.length & 1) ? leaves.length - 1 : leaves.length;
-        let tOffset = parentCount * DIGEST_SIZE, lastLeaf;
-        if (Array.isArray(leaves)) {
-            // building tree nodes from array of buffers
-            for (let i = 0; i < evenLeafCount; i += 2, tOffset += DIGEST_SIZE) {
-                let hash = crypto.createHash(this.algorithm);
-                hash.update(leaves[i]);
-                hash.update(leaves[i + 1]);
-                hash.digest().copy(nodeBuffer, tOffset);
-            }
-            if (evenLeafCount !== leaves.length) {
-                lastLeaf = leaves[evenLeafCount];
-            }
-        }
-        else {
-            // building tree nodes from an element buffer
-            const lBuffer = leaves.toBuffer();
-            const doubleElementSize = leaves.elementSize * 2;
-            let sOffset = 0;
-            for (let i = 0; i < evenLeafCount; i += 2, sOffset += doubleElementSize, tOffset += DIGEST_SIZE) {
-                let hash = crypto.createHash(this.algorithm);
-                hash.update(lBuffer.slice(sOffset, sOffset + doubleElementSize));
-                hash.digest().copy(nodeBuffer, tOffset);
-            }
-            if (evenLeafCount !== leaves.length) {
-                lastLeaf = lBuffer.slice(sOffset);
-            }
+        let tOffset = parentCount * DIGEST_SIZE;
+        const lBuffer = leaves.toBuffer();
+        const doubleElementSize = leaves.elementSize * 2;
+        let sOffset = 0;
+        for (let i = 0; i < evenLeafCount; i += 2, sOffset += doubleElementSize, tOffset += DIGEST_SIZE) {
+            let hash = crypto.createHash(this.algorithm);
+            hash.update(lBuffer.slice(sOffset, sOffset + doubleElementSize));
+            hash.digest().copy(nodeBuffer, tOffset);
         }
         // if the number of leaves was odd, process the last leaf
-        if (lastLeaf) {
+        if (evenLeafCount !== leaves.length) {
             let hash = crypto.createHash(this.algorithm);
-            hash.update(lastLeaf);
+            hash.update(lBuffer.slice(sOffset));
             hash.update(NULL_BUFFER);
             hash.digest().copy(nodeBuffer, tOffset);
             tOffset += DIGEST_SIZE;

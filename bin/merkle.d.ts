@@ -19,7 +19,7 @@ declare module '@guildofweavers/merkle' {
         digest(value: Buffer): Buffer;
         merge(a: Buffer, b: Buffer): Buffer;
 
-        buildMerkleNodes(depth: number, leaves: Buffer[] | Vector): ArrayBuffer;
+        buildMerkleNodes(depth: number, leaves: Vector): ArrayBuffer;
     }
 
     // MERKLE TREE

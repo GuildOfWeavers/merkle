@@ -21,20 +21,16 @@ export class MerkleTree {
 
     static create(values: Buffer[] | Vector, hash: Hash) {
         const depth = Math.ceil(Math.log2(values.length));
-        const nodes = hash.buildMerkleNodes(depth, values)
-        return new MerkleTree(nodes, values, depth, hash.digestSize);
+        const leaves = Array.isArray(values) ? new JsVector(values) : values;
+        const nodes = hash.buildMerkleNodes(depth, leaves)
+        return new MerkleTree(nodes, leaves, depth, hash.digestSize);
     }
 
-    private constructor(nodes: ArrayBuffer, values: Buffer[] | Vector, depth: number, nodeSize: number) {
+    private constructor(nodes: ArrayBuffer, leaves: Vector, depth: number, nodeSize: number) {
         this.depth = depth;
         this.nodes = nodes;
         this.nodeSize = nodeSize;
-        if (Array.isArray(values)) {
-            this.values = new JsVector(values);
-        }
-        else {
-            this.values = values;
-        }
+        this.values = leaves;
     }
 
     // PUBLIC ACCESSORS

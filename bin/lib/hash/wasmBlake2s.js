@@ -54,40 +54,23 @@ class WasmBlake2s {
         // build first row of internal nodes (parents of leaves)
         const parentCount = nodeCount >>> 1; // nodeCount / 2
         const evenLeafCount = (leaves.length & 1) ? leaves.length - 1 : leaves.length;
-        let resRef = nRef + parentCount * DIGEST_SIZE, lastLeaf;
-        if (Array.isArray(leaves)) {
-            // building tree nodes from array of buffers
-            for (let i = 0; i < evenLeafCount; i += 2, resRef += DIGEST_SIZE) {
-                let leaf1 = leaves[i], leaf2 = leaves[i + 1];
-                wasm.U8.set(leaf1, iRef);
-                wasm.U8.set(leaf2, iRef + leaf1.length);
-                wasm.hash(iRef, leaf1.length + leaf2.length, resRef);
-            }
-            if (evenLeafCount !== leaves.length) {
-                lastLeaf = leaves[evenLeafCount];
-            }
+        let resRef = nRef + parentCount * DIGEST_SIZE;
+        let lBuffer = leaves.toBuffer(), lRef = lBuffer.byteOffset, releaseLeaves = false;
+        if (lBuffer.buffer !== wasm.U8.buffer) {
+            // if the leaves buffer belongs to some other WASM memory, copy it into local memory
+            lRef = wasm.newArray(lBuffer.byteLength);
+            lBuffer = leaves.toBuffer(); // get leaves buffer again in case memory has grown
+            wasm.U8.set(lBuffer, lRef);
+            releaseLeaves = true;
         }
-        else {
-            // building tree nodes from an element buffer
-            let lBuffer = leaves.toBuffer(), lRef = lBuffer.byteOffset, releaseLeaves = false;
-            if (lBuffer.buffer !== wasm.U8.buffer) {
-                // if the leaves buffer belongs to some other WASM memory, copy it into local memory
-                lRef = wasm.newArray(lBuffer.byteLength);
-                lBuffer = leaves.toBuffer(); // get leaves buffer again in case memory has grown
-                wasm.U8.set(lBuffer, lRef);
-                releaseLeaves = true;
-            }
-            resRef = wasm.hashValues1(lRef, resRef, leaves.elementSize << 1, evenLeafCount >>> 1);
-            if (evenLeafCount !== leaves.length) {
-                lastLeaf = Buffer.from(lBuffer.slice(lBuffer.byteLength - leaves.elementSize));
-            }
-            // if the leaves were copied into local memory, free that memory
-            if (releaseLeaves) {
-                wasm.__release(lRef);
-            }
+        resRef = wasm.hashValues1(lRef, resRef, leaves.elementSize << 1, evenLeafCount >>> 1);
+        // if the leaves were copied into local memory, free that memory
+        if (releaseLeaves) {
+            wasm.__release(lRef);
         }
         // if the number of leaves was odd, process the last leaf
-        if (lastLeaf) {
+        if (evenLeafCount !== leaves.length) {
+            const lastLeaf = Buffer.from(lBuffer.slice(lBuffer.byteLength - leaves.elementSize));
             wasm.U8.set(lastLeaf, iRef);
             wasm.U8.set(NULL_BUFFER, iRef + lastLeaf.length);
             wasm.hash(iRef, lastLeaf.length + DIGEST_SIZE, resRef);
