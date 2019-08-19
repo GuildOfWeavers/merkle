@@ -59,6 +59,9 @@ declare module '@guildofweavers/merkle' {
         /** Returns a leaf node located at the specified index */
         getLeaf(index: number): Buffer;
 
+        /** Returns all leaf nodes of the tree */
+        getLeaves(): Buffer[];
+
         /** Returns a Merkle proof for a single leaf at the specified index */
         prove(index: number): Buffer[];
 

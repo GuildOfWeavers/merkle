@@ -30,6 +30,13 @@ class MerkleTree {
     getLeaf(index) {
         return this.values.toBuffer(index, 1);
     }
+    getLeaves() {
+        const leaves = new Array(this.values.length);
+        for (let i = 0; i < leaves.length; i++) {
+            leaves[i] = this.values.toBuffer(i, 1);
+        }
+        return leaves;
+    }
     // PUBLIC METHODS
     // --------------------------------------------------------------------------------------------
     prove(index) {
