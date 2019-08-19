@@ -27,3 +27,14 @@ export function createHash(algorithm: HashAlgorithm, useWasmOrOptions?: boolean 
         return new JsHash(algorithm);
     }
 }
+
+export function isWasmOptimized(algorithm: HashAlgorithm): boolean {
+    switch (algorithm) {
+        case 'blake2s256': {
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}

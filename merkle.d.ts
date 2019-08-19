@@ -35,6 +35,9 @@ declare module '@guildofweavers/merkle' {
         buildMerkleNodes(depth: number, leaves: Vector): ArrayBuffer;
     }
 
+    /** Returns true if WebAssembly optimization is available for the provided algorithm */
+    export function isWasmOptimized(hashAlgorithm: HashAlgorithm): boolean;
+
     // MERKLE TREE
     // --------------------------------------------------------------------------------------------
     export class MerkleTree {

@@ -21,4 +21,15 @@ function createHash(algorithm, useWasmOrOptions) {
     }
 }
 exports.createHash = createHash;
+function isWasmOptimized(algorithm) {
+    switch (algorithm) {
+        case 'blake2s256': {
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}
+exports.isWasmOptimized = isWasmOptimized;
 //# sourceMappingURL=index.js.map
