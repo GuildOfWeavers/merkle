@@ -1,7 +1,7 @@
 // IMPORTS
 // ================================================================================================
-import { BatchMerkleProof, HashAlgorithm } from '@guildofweavers/merkle';
-import * as hashing from './hash';
+import { BatchMerkleProof, Hash, Vector } from '@guildofweavers/merkle';
+import { JsVector } from './JsVector';
 
 // CLASS DEFINITION
 // ================================================================================================
@@ -9,38 +9,38 @@ export class MerkleTree {
 
     readonly depth      : number;
     readonly nodes      : ArrayBuffer;
-    readonly values     : Buffer[];
+    readonly values     : Vector;
     readonly nodeSize   : number;
 
     // CONSTRUCTORS
     // --------------------------------------------------------------------------------------------
-    static async createAsync(values: Buffer[], hashAlgorithm: HashAlgorithm) {
+    static async createAsync(values: Buffer[] | Vector, hash: Hash) {
         // FUTURE: implement asynchronous instantiation
-        return MerkleTree.create(values, hashAlgorithm);
+        return MerkleTree.create(values, hash);
     }
 
-    static create(values: Buffer[], hashAlgorithm: HashAlgorithm) {
-        
-        const buildTree = hashing.getMerkleTreeBuilder(hashAlgorithm);
-        const nodeSize = hashing.getHashDigestSize(hashAlgorithm);
-
+    static create(values: Buffer[] | Vector, hash: Hash) {
         const depth = Math.ceil(Math.log2(values.length));
-        const nodes = buildTree(depth, values)
-
-        return new MerkleTree(nodes, values, depth, nodeSize);
+        const leaves = Array.isArray(values) ? new JsVector(values) : values;
+        const nodes = hash.buildMerkleNodes(depth, leaves)
+        return new MerkleTree(nodes, leaves, depth, hash.digestSize);
     }
 
-    private constructor(nodes: ArrayBuffer, values: Buffer[], depth: number, nodeSize: number) {
+    private constructor(nodes: ArrayBuffer, leaves: Vector, depth: number, nodeSize: number) {
         this.depth = depth;
         this.nodes = nodes;
-        this.values = values;
         this.nodeSize = nodeSize;
+        this.values = leaves;
     }
 
     // PUBLIC ACCESSORS
     // --------------------------------------------------------------------------------------------
     get root(): Buffer {
         return Buffer.from(this.nodes, this.nodeSize, this.nodeSize);
+    }
+
+    getLeaf(index: number): Buffer {
+        return this.values.toBuffer(index, 1);
     }
 
     // PUBLIC METHODS
@@ -53,8 +53,8 @@ export class MerkleTree {
         const nodeSize = this.nodeSize;
         const nodeCount = this.nodes.byteLength / nodeSize;
 
-        const value1 = this.values[index];
-        const value2 = this.values[index ^ 1];
+        const value1 = this.values.toBuffer(index, 1);
+        const value2 = this.values.toBuffer(index ^ 1, 1);
         const proof = [value1, value2];
 
         index = (index + nodeCount) >> 1;
@@ -83,8 +83,8 @@ export class MerkleTree {
         let nextIndexes = [];
         for (let i = 0; i < indexes.length; i++) {
             let index = indexes[i];
-            let v1 = this.values[index]
-            let v2 = this.values[index + 1];
+            let v1 = this.values.toBuffer(index, 1);
+            let v2 = this.values.toBuffer(index + 1, 1);
 
             // only values for indexes that were explicitly requested are included in values array
             const inputIndex1 = indexMap.get(index);
@@ -133,21 +133,20 @@ export class MerkleTree {
 
     // STATIC METHODS
     // --------------------------------------------------------------------------------------------
-    static verify(root: Buffer, index: number, proof: Buffer[], hashAlgorithm: HashAlgorithm): boolean {
-        const hash = hashing.getHashFunction(hashAlgorithm);
+    static verify(root: Buffer, index: number, proof: Buffer[], hash: Hash): boolean {
 
         const r = index & 1;
         const value1 = proof[r];
         const value2 = proof[1 - r];
-        let v = hash(value1, value2);
+        let v = hash.merge(value1, value2);
 
         index = (index + 2 ** (proof.length - 1)) >> 1;
         for ( let i = 2; i < proof.length; i++) {
             if (index & 1) {
-                v = hash(proof[i], v);
+                v = hash.merge(proof[i], v);
             }
             else {
-                v = hash(v, proof[i]);
+                v = hash.merge(v, proof[i]);
             }
             index = index >> 1;
         }
@@ -155,9 +154,8 @@ export class MerkleTree {
         return root.equals(v);
     }
 
-    static verifyBatch(root: Buffer, indexes: number[], proof: BatchMerkleProof, hashAlgorithm: HashAlgorithm): boolean {
+    static verifyBatch(root: Buffer, indexes: number[], proof: BatchMerkleProof, hash: Hash): boolean {
         const v = new Map<number,Buffer>();
-        const hash = hashing.getHashFunction(hashAlgorithm);
 
         // replace odd indexes, offset, and sort in ascending order
         const offset = 2 ** proof.depth;
@@ -194,7 +192,10 @@ export class MerkleTree {
                 proofPointers[i] = 1;
             }
 
-            let parent = hash(v1, v2);
+            // if either value wasn't found, proof fails
+            if (v1 === undefined || v2 === undefined) return false;
+
+            let parent = hash.merge(v1, v2);
             let parentIndex = (offset + index >> 1);
             
             v.set(parentIndex, parent);
@@ -228,7 +229,7 @@ export class MerkleTree {
                 if (node === undefined || sibling === undefined) return false;
 
                 // calculate parent node and add it to the next set of nodes
-                let parent = (nodeIndex & 1) ? hash(sibling, node) : hash(node, sibling);
+                let parent = (nodeIndex & 1) ? hash.merge(sibling, node) : hash.merge(node, sibling);
                 let parentIndex = nodeIndex >> 1;
                 v.set(parentIndex, parent);
                 nextIndexes.push(parentIndex);

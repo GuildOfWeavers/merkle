@@ -1,59 +1,24 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const sha256 = require("./sha256");
-const blake2s256 = require("./blake2s");
-const wasmBlake2s256 = require("./wasmBlake2s");
-// PUBLIC FUNCTIONS
-// ================================================================================================
-function getHashFunction(algorithm) {
-    switch (algorithm) {
-        case 'sha256': {
-            return sha256.hash;
-        }
-        case 'blake2s256': {
-            return blake2s256.hash;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.hash;
-        }
-        default: {
-            throw new TypeError('Invalid hash algorithm');
+const WasmBlake2s_1 = require("./WasmBlake2s");
+const JsHash_1 = require("./JsHash");
+function createHash(algorithm, useWasmOrOptions) {
+    if (useWasmOrOptions) {
+        const wasmOptions = (typeof useWasmOrOptions === 'boolean')
+            ? {}
+            : useWasmOrOptions;
+        switch (algorithm) {
+            case 'blake2s256': {
+                return new WasmBlake2s_1.WasmBlake2s(wasmOptions.memory);
+            }
+            default: {
+                throw new Error(`WASM-optimization for ${algorithm} hash is not supported`);
+            }
         }
     }
-}
-exports.getHashFunction = getHashFunction;
-function getHashDigestSize(algorithm) {
-    switch (algorithm) {
-        case "sha256": {
-            return sha256.digestSize;
-        }
-        case "blake2s256": {
-            return blake2s256.digestSize;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.digestSize;
-        }
-        default: {
-            throw new TypeError('Invalid hash algorithm');
-        }
+    else {
+        return new JsHash_1.JsHash(algorithm);
     }
 }
-exports.getHashDigestSize = getHashDigestSize;
-function getMerkleTreeBuilder(algorithm) {
-    switch (algorithm) {
-        case "sha256": {
-            return sha256.buildMerkleTree;
-        }
-        case "blake2s256": {
-            return blake2s256.buildMerkleTree;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.buildMerkleTree;
-        }
-        default: {
-            throw new TypeError('Invalid hash algorithm');
-        }
-    }
-}
-exports.getMerkleTreeBuilder = getMerkleTreeBuilder;
+exports.createHash = createHash;
 //# sourceMappingURL=index.js.map

@@ -1,63 +1,29 @@
 // IMPORTS
 // ================================================================================================
-import { HashAlgorithm, HashFunction } from '@guildofweavers/merkle';
-import * as sha256 from './sha256';
-import * as blake2s256 from './blake2s';
-import * as wasmBlake2s256 from './wasmBlake2s';
-
-// INTERFACES
-// ================================================================================================
-export type MerkleTreeBuilder = (depth: number, leaves: Buffer[]) => ArrayBuffer;
+import { HashAlgorithm, Hash, WasmOptions } from '@guildofweavers/merkle';
+import { WasmBlake2s } from './WasmBlake2s';
+import { JsHash } from './JsHash';
 
 // PUBLIC FUNCTIONS
 // ================================================================================================
-export function getHashFunction(algorithm: HashAlgorithm): HashFunction {
-    switch (algorithm) {
-        case 'sha256': {
-            return sha256.hash;
-        }
-        case 'blake2s256': {
-            return blake2s256.hash;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.hash;
-        }
-        default: {
-            throw new TypeError('Invalid hash algorithm');
+export function createHash(algorithm: HashAlgorithm, useWasm?: boolean): Hash
+export function createHash(algorithm: HashAlgorithm, options: Partial<WasmOptions>): Hash
+export function createHash(algorithm: HashAlgorithm, useWasmOrOptions?: boolean | Partial<WasmOptions>): Hash {
+    if (useWasmOrOptions) {
+        const wasmOptions = (typeof useWasmOrOptions === 'boolean')
+            ? {}
+            : useWasmOrOptions;
+
+        switch (algorithm) {
+            case 'blake2s256': {
+                return new WasmBlake2s(wasmOptions.memory);
+            }
+            default: {
+                throw new Error(`WASM-optimization for ${algorithm} hash is not supported`);
+            }
         }
     }
-}
-
-export function getHashDigestSize(algorithm: HashAlgorithm): number {
-    switch (algorithm) {
-        case "sha256": {
-            return sha256.digestSize;
-        }
-        case "blake2s256": {
-            return blake2s256.digestSize;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.digestSize;
-        }
-        default: {
-            throw new TypeError('Invalid hash algorithm');
-        }
-    }
-}
-
-export function getMerkleTreeBuilder(algorithm: HashAlgorithm): MerkleTreeBuilder {
-    switch (algorithm) {
-        case "sha256": {
-            return sha256.buildMerkleTree;
-        }
-        case "blake2s256": {
-            return blake2s256.buildMerkleTree;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.buildMerkleTree;
-        }
-        default: {
-            throw new TypeError('Invalid hash algorithm');
-        }
+    else {
+        return new JsHash(algorithm);
     }
 }

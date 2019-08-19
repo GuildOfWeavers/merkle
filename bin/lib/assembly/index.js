@@ -25,12 +25,12 @@ const SIGMA = [
 ];
 // PUBLIC MODULE
 // ================================================================================================
-function instantiateBlake2s() {
-    let initialMemPages = 10;
+function instantiateBlake2s(memory) {
+    if (memory === undefined) {
+        memory = new WebAssembly.Memory({ initial: 10 });
+    }
     const wasm = loader.instantiateBuffer(fs.readFileSync(BLAKE2S_WASM), {
-        env: {
-            memory: new WebAssembly.Memory({ initial: initialMemPages })
-        }
+        env: { memory }
     });
     let sIdx = wasm.getSigmaRef();
     for (let sigma of SIGMA) {
