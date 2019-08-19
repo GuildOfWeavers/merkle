@@ -58,7 +58,7 @@ Once you have a tree, you can use it to prove that a value is located at a certa
 You can also create a proof for many indexes at the same time:
 
 * **proveBatch**(indexes: `number[]`): `BatchMerkleProof`<br />
-  The resulting proof is compressed. So, if you need to prove membership of multiple values, this is a much more efficient approach.
+  The resulting proof is [compressed](#Batch-proof-compression). So, if you need to prove membership of multiple values, this is a much more efficient approach.
   
 Batch proof has the following form:
 
@@ -121,6 +121,20 @@ Some very informal benchmarks run on Intel Core i5-7300U @ 2.60GHz (single threa
 The difference between _external_ and _internal_ cases for WASM is that in the internal case, values from which the tree is to be built are already in WASM memory, while in the external case, they need to be copied into WASM memory.
 
 **Note:** while WebAssembly-optimized version of Blake2s algorithm is much faster at hashing small values (i.e. 32-64 bytes), it is slower at hashing large values. For example, when hashing 1KB values, Node's native implementation is about 30% faster.
+
+### Batch proof compression
+When you generate batch proofs, the proofs are compressed by removing redundant nodes. The table below shows an approximate size of batch proof for a given number of indexes against trees of a given size.
+
+| Tree leaves    | 32 indexes    | 64 indexes    | 128 indexes   | 256 indexes   |
+| :------------: | ------------: | ------------: | ------------: | ------------: |
+| 2<sup>10</sup> | 5.2 KB (47%)  | 8.6 KB (39%)  | 13.4 KB (30%) | 20.1 KB (23%) |
+| 2<sup>12</sup> | 7.0 KB (54%)  | 12.4 KB (48%) | 20.6 KB (40%) | 34.0 KB (33%) |
+| 2<sup>14</sup> | 9.2 KB (61%)  | 16.2 KB (54%) | 28.6 KB (48%) | 49.3 KB (41%) |
+| 2<sup>16</sup> | 11.0 KB (65%) | 20.3 KB (60%) | 36.5 KB (54%) | 65.2 KB (48%) |
+| 2<sup>18</sup> | 13.1 KB (69%) | 24.5 KB (63%) | 44.6 KB (59%) | 81.0 KB (53%) |
+| 2<sup>20</sup> | 15.1 KB (72%) | 28.4 KB (68%) | 52.5 KB (63%) | 96.8 KB (58%) |
+
+The percentages next to proof sizes are ratios of the batch proof size to a naive proof size. For example, if you generate a batch proof for 32 indexes against a tree of 2<sup>10</sup> leaves, your proof will be about 5.2 KB, and that will be 47% of 32 individual proofs against the same tree.
 
 ## References
 
