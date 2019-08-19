@@ -6,14 +6,13 @@ import { JsHash } from './JsHash';
 
 // PUBLIC FUNCTIONS
 // ================================================================================================
-export function createHash(algorithm: HashAlgorithm): Hash
-export function createHash(algorithm: HashAlgorithm, wasm: boolean): Hash
+export function createHash(algorithm: HashAlgorithm, useWasm?: boolean): Hash
 export function createHash(algorithm: HashAlgorithm, options: Partial<WasmOptions>): Hash
-export function createHash(algorithm: HashAlgorithm, optionsOrWasm?: Partial<WasmOptions> | boolean): Hash {
-    if (optionsOrWasm) {
-        const wasmOptions = (typeof optionsOrWasm === 'boolean')
+export function createHash(algorithm: HashAlgorithm, useWasmOrOptions?: boolean | Partial<WasmOptions>): Hash {
+    if (useWasmOrOptions) {
+        const wasmOptions = (typeof useWasmOrOptions === 'boolean')
             ? {}
-            : optionsOrWasm;
+            : useWasmOrOptions;
 
         switch (algorithm) {
             case 'blake2s256': {

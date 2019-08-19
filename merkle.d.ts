@@ -4,8 +4,18 @@ declare module '@guildofweavers/merkle' {
     // --------------------------------------------------------------------------------------------
     export type HashAlgorithm = 'sha256' | 'blake2s256';
 
-    export function createHash(algorithm: HashAlgorithm): Hash;
-    export function createHash(algorithm: HashAlgorithm, wasm: boolean): Hash;
+    /**
+     * Creates a Hash object for the specified algorithm; if useWasm is set to true, will use a
+     * WebAssembly-optimized version of the algorithm. If WASM-optimization is not available for
+     * the specified algorithm, throws an error.
+     */
+    export function createHash(algorithm: HashAlgorithm, useWasm?: boolean): Hash;
+
+    /**
+     * Creates a WebAssembly-optimized Hash object for the specified algorithm and passes provided
+     * options to it. If WASM-optimization is not available for the specified algorithm, throws
+     * an error.
+     */
     export function createHash(algorithm: HashAlgorithm, options: Partial<WasmOptions>): Hash;
 
     export interface WasmOptions {
@@ -16,7 +26,10 @@ declare module '@guildofweavers/merkle' {
         readonly algorithm  : HashAlgorithm;
         readonly digestSize : number;
 
+        /** Hashes the provided value */
         digest(value: Buffer): Buffer;
+
+        /** Hashes a concatenation of a and b */
         merge(a: Buffer, b: Buffer): Buffer;
 
         buildMerkleNodes(depth: number, leaves: Vector): ArrayBuffer;
