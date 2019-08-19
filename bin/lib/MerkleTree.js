@@ -159,6 +159,9 @@ class MerkleTree {
                 v2 = proof.values[inputIndex2];
                 proofPointers[i] = 1;
             }
+            // if either value wasn't found, proof fails
+            if (v1 === undefined || v2 === undefined)
+                return false;
             let parent = hash.merge(v1, v2);
             let parentIndex = (offset + index >> 1);
             v.set(parentIndex, parent);
