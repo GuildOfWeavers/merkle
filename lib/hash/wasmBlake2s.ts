@@ -1,6 +1,6 @@
 // IMPORTS
 // ================================================================================================
-import { Hash, HashAlgorithm, Vector } from "@guildofweavers/merkle";
+import { Hash, HashAlgorithm, Vector, WasmOptions } from "@guildofweavers/merkle";
 import { instantiateBlake2s, WasmBlake2s as Blake2sWasm } from '../assembly';
 
 // MODULE VARIABLES
@@ -19,8 +19,8 @@ export class WasmBlake2s implements Hash {
 
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
-    constructor(memory?: WebAssembly.Memory) {
-        this.wasm = instantiateBlake2s(memory);
+    constructor(options: WasmOptions) {
+        this.wasm = instantiateBlake2s(options.memory);
         this.iRef = this.wasm.getInputsRef();
         this.oRef = this.wasm.getOutputRef();
         this.oEnd = this.oRef + DIGEST_SIZE;
@@ -34,6 +34,10 @@ export class WasmBlake2s implements Hash {
 
     get digestSize(): number {
         return DIGEST_SIZE;
+    }
+
+    get isOptimized(): boolean {
+        return true;
     }
 
     // PUBLIC METHODS

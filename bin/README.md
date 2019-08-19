@@ -86,10 +86,10 @@ For the batched version use:
 A `Hash` object is required when creating Merkle trees and when verifying Merkle proofs. Internally, it is used for hashing of all values and tree nodes. To create a Hash object, you can use `createHash()` function:
 
 * **createHash**(algorithm: `string`, useWasm?: `boolean`): `Hash`<br />
-  Creates a Hash object for the specified `algorithm`. If the optional `useWasm` parameter is set to _true_, will use a WebAssembly-optimized version of the algorithm. If WASM-optimization is not available for the specified algorithm, throws an error.
+  Creates a Hash object for the specified `algorithm`. If `useWasm` is set to true, will try to instantiate a WebAssembly-optimized version of the algorithm. If WASM optimization is not available for the specified algorithm, Node's native implementation will be used.
 
 * **createHash**(algorithm: `string`, wasmOptions: `WasmOptions`): `Hash`<br />
-  Creates a WebAssembly-optimized Hash object for the specified `algorithm` and passes the provided options to it. If WASM-optimization is not available for the specified algorithm, throws an error.
+  Tries to create a WebAssembly-optimized Hash object for the specified `algorithm` and pass the provided options to it. If WASM optimization is not available for the specified algorithm, Node's native implementation will be used.
 
 Currently, the following hash algorithms are supported:
 

@@ -5,16 +5,16 @@ declare module '@guildofweavers/merkle' {
     export type HashAlgorithm = 'sha256' | 'blake2s256';
 
     /**
-     * Creates a Hash object for the specified algorithm; if useWasm is set to true, will use a
-     * WebAssembly-optimized version of the algorithm. If WASM-optimization is not available for
-     * the specified algorithm, throws an error.
+     * Creates a Hash object for the specified algorithm. If useWasm is set to true, will try to
+     * instantiate a WebAssembly-optimized version of the algorithm. If WASM optimization is not
+     * available for the specified algorithm, Node's native implementation will be used.
      */
     export function createHash(algorithm: HashAlgorithm, useWasm?: boolean): Hash;
 
     /**
-     * Creates a WebAssembly-optimized Hash object for the specified algorithm and passes provided
-     * options to it. If WASM-optimization is not available for the specified algorithm, throws
-     * an error.
+     * Tries to create a WebAssembly-optimized Hash object for the specified algorithm and pass 
+     * the provided options to it. If WASM optimization is not available for the specified algorithm,
+     * Node's native implementation will be used.
      */
     export function createHash(algorithm: HashAlgorithm, options: Partial<WasmOptions>): Hash;
 
@@ -25,6 +25,7 @@ declare module '@guildofweavers/merkle' {
     export interface Hash {
         readonly algorithm  : HashAlgorithm;
         readonly digestSize : number;
+        readonly isOptimized: boolean;
 
         /** Hashes the provided value */
         digest(value: Buffer): Buffer;

@@ -27,6 +27,10 @@ export class JsHash implements Hash {
         return DIGEST_SIZE;
     }
 
+    get isOptimized(): boolean {
+        return false;
+    }
+
     // PUBLIC METHODS
     // --------------------------------------------------------------------------------------------
     digest(value: Buffer): Buffer {

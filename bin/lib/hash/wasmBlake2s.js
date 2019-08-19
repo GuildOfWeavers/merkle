@@ -10,8 +10,8 @@ const NULL_BUFFER = Buffer.alloc(DIGEST_SIZE);
 class WasmBlake2s {
     // CONSTRUCTOR
     // --------------------------------------------------------------------------------------------
-    constructor(memory) {
-        this.wasm = assembly_1.instantiateBlake2s(memory);
+    constructor(options) {
+        this.wasm = assembly_1.instantiateBlake2s(options.memory);
         this.iRef = this.wasm.getInputsRef();
         this.oRef = this.wasm.getOutputRef();
         this.oEnd = this.oRef + DIGEST_SIZE;
@@ -23,6 +23,9 @@ class WasmBlake2s {
     }
     get digestSize() {
         return DIGEST_SIZE;
+    }
+    get isOptimized() {
+        return true;
     }
     // PUBLIC METHODS
     // --------------------------------------------------------------------------------------------

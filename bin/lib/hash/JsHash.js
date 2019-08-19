@@ -21,6 +21,9 @@ class JsHash {
     get digestSize() {
         return DIGEST_SIZE;
     }
+    get isOptimized() {
+        return false;
+    }
     // PUBLIC METHODS
     // --------------------------------------------------------------------------------------------
     digest(value) {
