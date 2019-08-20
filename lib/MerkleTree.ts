@@ -1,7 +1,7 @@
 // IMPORTS
 // ================================================================================================
 import { BatchMerkleProof, Hash, Vector } from '@guildofweavers/merkle';
-import { JsVector } from './JsVector';
+import { JsVector } from './vectors/JsVector';
 
 // CLASS DEFINITION
 // ================================================================================================

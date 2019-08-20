@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const JsVector_1 = require("./JsVector");
+const JsVector_1 = require("./vectors/JsVector");
 // CLASS DEFINITION
 // ================================================================================================
 class MerkleTree {

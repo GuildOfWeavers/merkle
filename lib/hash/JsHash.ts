@@ -2,7 +2,7 @@
 // ================================================================================================
 import * as crypto from 'crypto';
 import { Hash, HashAlgorithm, Vector } from "@guildofweavers/merkle";
-import { JsVector } from '../JsVector';
+import { JsVector } from '../vectors/JsVector';
 
 // MODULE VARIABLES
 // ================================================================================================

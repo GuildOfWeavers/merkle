@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // IMPORTS
 // ================================================================================================
 const crypto = require("crypto");
-const JsVector_1 = require("../JsVector");
+const JsVector_1 = require("../vectors/JsVector");
 // MODULE VARIABLES
 // ================================================================================================
 const DIGEST_SIZE = 32; // 32 bytes

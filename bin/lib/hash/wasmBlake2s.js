@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const assembly_1 = require("../assembly");
-const WasmVector_1 = require("../WasmVector");
+const WasmVector_1 = require("../vectors/WasmVector");
 // MODULE VARIABLES
 // ================================================================================================
 const DIGEST_SIZE = 32; // 32 bytes
@@ -102,6 +102,12 @@ class WasmBlake2s {
     mergeVectorRows(vectors) {
         const elementCount = vectors[0].length;
         const elementSize = vectors[0].elementSize;
+        if (elementSize > 64) {
+            throw new Error(`Cannot merge vector rows: vector element size must be smaller than 64 bytes`);
+        }
+        else if (64 % elementSize !== 0) {
+            throw new Error(`Cannot merge vector rows: vector element size must be a divisor of 64`);
+        }
         const vRefs = this.wasm.newArray(vectors.length * 8);
         const vIdx = vRefs >>> 3;
         const refsToRelease = new Set();

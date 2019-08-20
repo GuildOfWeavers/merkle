@@ -2,7 +2,7 @@
 // ================================================================================================
 import { Hash, HashAlgorithm, Vector, WasmOptions } from "@guildofweavers/merkle";
 import { instantiateBlake2s, WasmBlake2s as Blake2sWasm } from '../assembly';
-import { WasmVector } from "../WasmVector";
+import { WasmVector } from "../vectors/WasmVector";
 
 // MODULE VARIABLES
 // ================================================================================================
@@ -127,6 +127,13 @@ export class WasmBlake2s implements Hash {
     mergeVectorRows(vectors: Vector[]): Vector {
         const elementCount = vectors[0].length;
         const elementSize  = vectors[0].elementSize;
+
+        if (elementSize > 64) {
+            throw new Error(`Cannot merge vector rows: vector element size must be smaller than 64 bytes`);
+        }
+        else if (64 % elementSize !== 0) {
+            throw new Error(`Cannot merge vector rows: vector element size must be a divisor of 64`);
+        }
 
         const vRefs = this.wasm.newArray(vectors.length * 8);
         const vIdx = vRefs >>> 3;

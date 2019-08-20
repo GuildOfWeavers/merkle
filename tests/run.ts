@@ -4,8 +4,8 @@ import * as assert from 'assert';
 import * as crypto from 'crypto';
 import { Vector } from '@guildofweavers/merkle';
 import { MerkleTree, createHash } from '../index';
-import { JsVector } from '../lib/JsVector';
-import { WasmVector } from '../lib/WasmVector';
+import { JsVector } from '../lib/vectors/JsVector';
+import { WasmVector } from '../lib/vectors/WasmVector';
 import { instantiateBlake2s } from '../lib/assembly';
 
 // MODULE VARIABLES

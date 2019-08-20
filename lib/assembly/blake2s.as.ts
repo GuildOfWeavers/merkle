@@ -84,16 +84,39 @@ export function hashValues2(vRef: usize, resRef: usize, vElementSize: i32, vElem
 
 export function mergeArrayElements(vRefs: usize, resRef: usize, vCount: i32, vElementCount: i32, vElementSize: i32): void {
 
-    let temp = new ArrayBuffer(vCount * vElementSize);
-    let tRef = changetype<usize>(temp);
+    let mRef = changetype<usize>(m);
+    let vLength = vCount * vElementSize;
+    let vOffset = 0;
+    let resEnd = resRef + vElementCount * 32;
 
-    for (let i = 0; i < vElementCount; i++, resRef += 32) {
-        let tjRef = tRef;
-        for (let j = 0; j < vCount; j++, tjRef += vElementSize) {
-            let vRef = <usize>load<u64>(vRefs + j * 8);
-            memory.copy(tjRef, vRef + i * vElementSize, vElementSize);
+    while (resRef < resEnd) {
+
+        // initialize the context
+        store<u32>(resRef, 0x6b08e647);   // h[0] = IV[0] ^ 0x01010000 ^ 0 ^ 32;
+        memory.copy(resRef + 4, changetype<usize>(IV) + 4, 28);
+        t = 0;
+        let c = 0;
+        
+        // run intermediate compressions
+        for (let j = 0; j < vCount; j++) {
+            let vRef = <usize>load<u64>(vRefs + (j << 3));
+            memory.copy(mRef + c, vRef + vOffset, vElementSize);
+            c += vElementSize;
+            t += vElementSize;
+            
+            if (c == 64 && t != vLength) {
+                c = 0;
+                compress(resRef, false);
+            }
         }
-        hash(tRef, vCount * vElementSize, resRef);
+        
+        // run final compression
+        memory.fill(mRef + c, 0, 64 - c);
+        compress(resRef, true);
+
+        // update references for the next loop iteration
+        resRef += 32;
+        vOffset += vElementSize;
     }
 }
 
