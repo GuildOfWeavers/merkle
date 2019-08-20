@@ -34,6 +34,8 @@ declare module '@guildofweavers/merkle' {
         merge(a: Buffer, b: Buffer): Buffer;
 
         buildMerkleNodes(depth: number, leaves: Vector): ArrayBuffer;
+
+        mergeVectorRows(vectors: Vector[]): Vector;
     }
 
     /** Returns true if WebAssembly optimization is available for the provided algorithm */
@@ -109,6 +111,7 @@ declare module '@guildofweavers/merkle' {
         readonly byteLength     : number;
         readonly elementSize    : number;
 
+        copyValue(index: number, destination: Buffer, offset: number): number;
         toBuffer(startIdx?: number, elementCount?: number): Buffer;
     }
 }

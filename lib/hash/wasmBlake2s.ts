@@ -2,6 +2,7 @@
 // ================================================================================================
 import { Hash, HashAlgorithm, Vector, WasmOptions } from "@guildofweavers/merkle";
 import { instantiateBlake2s, WasmBlake2s as Blake2sWasm } from '../assembly';
+import { WasmVector } from "../WasmVector";
 
 // MODULE VARIABLES
 // ================================================================================================
@@ -121,5 +122,43 @@ export class WasmBlake2s implements Hash {
         const nodes = this.wasm.U8.slice(nRef, nRef + bufferLength);
         this.wasm.__release(nRef);
         return nodes.buffer;
+    }
+
+    mergeVectorRows(vectors: Vector[]): Vector {
+        const elementCount = vectors[0].length;
+        const elementSize  = vectors[0].elementSize;
+
+        const vRefs = this.wasm.newArray(vectors.length * 8);
+        const vIdx = vRefs >>> 3;
+        const refsToRelease = new Set<number>();
+
+        // build array of references to vectors
+        let vRef: number;
+        for (let i = 0; i < vectors.length; i++) {
+            let buffer = vectors[i].toBuffer();
+            if (buffer.buffer === this.wasm.U8.buffer) {
+                // if the vector is already in WASM memory, just cache the reference to it
+                vRef = buffer.byteOffset;
+            }
+            else {
+                // otherwise, copy the vector into WASM memory
+                vRef = this.wasm.newArray(buffer.byteLength);
+                this.wasm.U8.set(vectors[i].toBuffer(), vRef);
+                refsToRelease.add(vRef);
+            }
+            this.wasm.U64[vIdx + i] = BigInt(vRef);
+        }
+
+        const resRef = this.wasm.newArray(elementCount * this.digestSize);
+        this.wasm.mergeArrayElements(vRefs, resRef, vectors.length, elementCount, elementSize);
+
+        // release all memory that was used up during the operation
+        this.wasm.__release(vRefs);
+        for (let vRef of refsToRelease) {
+            this.wasm.__release(vRef);
+        }
+
+        // build and return a vector with hashes
+        return new WasmVector((this.wasm as any).memory, resRef, elementCount, this.digestSize);
     }
 }

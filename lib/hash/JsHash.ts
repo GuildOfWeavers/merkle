@@ -2,6 +2,7 @@
 // ================================================================================================
 import * as crypto from 'crypto';
 import { Hash, HashAlgorithm, Vector } from "@guildofweavers/merkle";
+import { JsVector } from '../JsVector';
 
 // MODULE VARIABLES
 // ================================================================================================
@@ -95,5 +96,21 @@ export class JsHash implements Hash {
         }
 
         return nodes;
+    }
+
+    mergeVectorRows(vectors: Vector[]): Vector {
+        const elementCount = vectors[0].length;
+        const elementSize  = vectors[0].elementSize;
+
+        const result = new Array<Buffer>(elementCount);
+        const buffer = Buffer.allocUnsafe(vectors.length * elementSize);
+        for (let i = 0; i < elementCount; i++) {
+            let offset = 0;
+            for (let j = 0; j < vectors.length; j++) {
+                offset += vectors[j].copyValue(i, buffer, offset);
+            }
+            result[i] = this.digest(buffer);
+        }
+        return new JsVector(result);
     }
 }

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // IMPORTS
 // ================================================================================================
 const crypto = require("crypto");
+const JsVector_1 = require("../JsVector");
 // MODULE VARIABLES
 // ================================================================================================
 const DIGEST_SIZE = 32; // 32 bytes
@@ -79,6 +80,20 @@ class JsHash {
             hash.digest().copy(nodeBuffer, tIndex);
         }
         return nodes;
+    }
+    mergeVectorRows(vectors) {
+        const elementCount = vectors[0].length;
+        const elementSize = vectors[0].elementSize;
+        const result = new Array(elementCount);
+        const buffer = Buffer.allocUnsafe(vectors.length * elementSize);
+        for (let i = 0; i < elementCount; i++) {
+            let offset = 0;
+            for (let j = 0; j < vectors.length; j++) {
+                offset += vectors[j].copyValue(i, buffer, offset);
+            }
+            result[i] = this.digest(buffer);
+        }
+        return new JsVector_1.JsVector(result);
     }
 }
 exports.JsHash = JsHash;

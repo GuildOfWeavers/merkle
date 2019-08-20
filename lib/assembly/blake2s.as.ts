@@ -82,6 +82,21 @@ export function hashValues2(vRef: usize, resRef: usize, vElementSize: i32, vElem
     return resRef;
 }
 
+export function mergeArrayElements(vRefs: usize, resRef: usize, vCount: i32, vElementCount: i32, vElementSize: i32): void {
+
+    let temp = new ArrayBuffer(vCount * vElementSize);
+    let tRef = changetype<usize>(temp);
+
+    for (let i = 0; i < vElementCount; i++, resRef += 32) {
+        let tjRef = tRef;
+        for (let j = 0; j < vCount; j++, tjRef += vElementSize) {
+            let vRef = <usize>load<u64>(vRefs + j * 8);
+            memory.copy(tjRef, vRef + i * vElementSize, vElementSize);
+        }
+        hash(tRef, vCount * vElementSize, resRef);
+    }
+}
+
 // INTERNAL FUNCTIONS
 // ================================================================================================
 function compress(hRef: usize, last: boolean): void {

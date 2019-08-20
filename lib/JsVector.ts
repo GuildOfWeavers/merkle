@@ -22,6 +22,12 @@ export class JsVector implements Vector {
         return this.values.length;
     }
 
+    copyValue(index: number, destination: Buffer, offset: number): number {
+        const value = this.values[index];
+        value.copy(destination, offset);
+        return this.elementSize;
+    }
+
     toBuffer(startIdx = 0, elementCount?: number): Buffer {
         if (elementCount === undefined) {
             elementCount = this.values.length - startIdx;

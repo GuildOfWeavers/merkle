@@ -1,5 +1,9 @@
+// IMPORTS
+// ================================================================================================
 import { Vector } from '@guildofweavers/merkle';
 
+// CLASS DEFINITION
+// ================================================================================================
 export class WasmVector implements Vector {
 
     readonly memory     : WebAssembly.Memory;
@@ -18,12 +22,13 @@ export class WasmVector implements Vector {
         return this.length * this.elementSize;
     }
 
-    getValue(index: number): Buffer {
-        return Buffer.from(this.memory.buffer, this.base + index * this.elementSize, this.elementSize);
+    copyValue(index: number, destination: Buffer, offset: number): number {
+        const value = Buffer.from(this.memory.buffer, this.base + index * this.elementSize, this.elementSize);
+        value.copy(destination, offset);
+        return this.elementSize;
     }
 
     toBuffer(startIdx = 0, elementCount?: number): Buffer {
-        
         const offset = this.base + startIdx * this.elementSize;
         let length: number;
         if (elementCount === undefined) {

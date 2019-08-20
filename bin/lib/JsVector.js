@@ -13,6 +13,11 @@ class JsVector {
     get length() {
         return this.values.length;
     }
+    copyValue(index, destination, offset) {
+        const value = this.values[index];
+        value.copy(destination, offset);
+        return this.elementSize;
+    }
     toBuffer(startIdx = 0, elementCount) {
         if (elementCount === undefined) {
             elementCount = this.values.length - startIdx;
