@@ -8,7 +8,7 @@ import { JsVector } from './JsVector';
 export class MerkleTree {
 
     readonly depth      : number;
-    readonly nodes      : ArrayBuffer;
+    readonly nodes      : Buffer;
     readonly values     : Vector;
     readonly nodeSize   : number;
 
@@ -28,7 +28,7 @@ export class MerkleTree {
 
     private constructor(nodes: ArrayBuffer, leaves: Vector, depth: number, nodeSize: number) {
         this.depth = depth;
-        this.nodes = nodes;
+        this.nodes = Buffer.from(nodes);
         this.nodeSize = nodeSize;
         this.values = leaves;
     }
@@ -36,17 +36,20 @@ export class MerkleTree {
     // PUBLIC ACCESSORS
     // --------------------------------------------------------------------------------------------
     get root(): Buffer {
-        return Buffer.from(this.nodes, this.nodeSize, this.nodeSize);
+        // makes a copy of a node at position 1
+        return this.nodes.slice(this.nodeSize, this.nodeSize + this.nodeSize);
     }
 
     getLeaf(index: number): Buffer {
-        return this.values.toBuffer(index, 1);
+        // makes a copy of the leaf value
+        return Buffer.from(this.values.toBuffer(index, 1));
     }
 
     getLeaves(): Buffer[] {
+        // makes a deep copy of all leaves
         const leaves = new Array<Buffer>(this.values.length);
         for (let i = 0; i < leaves.length; i++) {
-            leaves[i] = this.values.toBuffer(i, 1);
+            leaves[i] = Buffer.from(this.values.toBuffer(i, 1));
         }
         return leaves;
     }
@@ -61,13 +64,14 @@ export class MerkleTree {
         const nodeSize = this.nodeSize;
         const nodeCount = this.nodes.byteLength / nodeSize;
 
-        const value1 = this.values.toBuffer(index, 1);
-        const value2 = this.values.toBuffer(index ^ 1, 1);
+        const value1 = this.getLeaf(index);
+        const value2 = this.getLeaf(index ^ 1);
         const proof = [value1, value2];
 
         index = (index + nodeCount) >> 1;
         while (index > 1) {
-            let sibling = Buffer.from(this.nodes, (index ^ 1) * nodeSize, nodeSize);
+            let siblingOffset = (index ^ 1) * nodeSize;
+            let sibling = this.nodes.slice(siblingOffset, siblingOffset + nodeSize);
             proof.push(sibling);
             index = index >> 1;
         }
@@ -91,8 +95,8 @@ export class MerkleTree {
         let nextIndexes = [];
         for (let i = 0; i < indexes.length; i++) {
             let index = indexes[i];
-            let v1 = this.values.toBuffer(index, 1);
-            let v2 = this.values.toBuffer(index + 1, 1);
+            let v1 = this.getLeaf(index);
+            let v2 = this.getLeaf(index + 1);
 
             // only values for indexes that were explicitly requested are included in values array
             const inputIndex1 = indexMap.get(index);
@@ -127,7 +131,8 @@ export class MerkleTree {
                     i++;
                 }
                 else {
-                    let sibling = Buffer.from(this.nodes, siblingIndex * nodeSize, nodeSize);
+                    let siblingOffset = siblingIndex * nodeSize;
+                    let sibling = this.nodes.slice(siblingOffset, siblingOffset + nodeSize)
                     proof.nodes[i].push(sibling);
                 }
 

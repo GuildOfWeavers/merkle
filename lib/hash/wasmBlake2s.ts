@@ -43,6 +43,7 @@ export class WasmBlake2s implements Hash {
     // PUBLIC METHODS
     // --------------------------------------------------------------------------------------------
     digest(value: Buffer): Buffer {
+        // TODO: investigate checking if the buffer comes from shared memory
         if (value.byteLength < 4096) {
             this.wasm.U8.set(value, this.iRef);
             this.wasm.hash(this.iRef, value.byteLength, this.oRef);
