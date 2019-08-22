@@ -1,29 +1,48 @@
-import { WasmBlake2s } from '../lib/assembly';
+// IMPORTS
+// ================================================================================================
+import { instantiateBlake2s } from '../lib/assembly';
 import { parentPort, workerData } from 'worker_threads';
+import { HashAlgorithm } from '@guildofweavers/merkle';
 
+// INTERFACES
+// ================================================================================================
 interface WorkerConfig {
-    value: Buffer;
+    algorith    : HashAlgorithm;
+    buffer      : SharedArrayBuffer;
 }
 
-const data = workerData;
-console.log(data);
-const wasm: WasmBlake2s = data.wasm;
-const i1Ref = wasm.getInput1Ref();
-const oRef = wasm.getOutputRef();
+interface HashRequest {
+    vRef            : number;
+    resRef          : number;
+    vElementSize    : number;
+    vElementCount   : number;
+}
 
-parentPort!.on('message', ({ value }: WorkerConfig) => {
-    wasm.U8.set(value, i1Ref);
-    wasm.hash1(i1Ref, oRef);
+// MODULE VARIABLES
+// ================================================================================================
+const config = workerData as WorkerConfig;
+const buffer = Buffer.from(config.buffer);
+const wasm = instantiateBlake2s();
+
+parentPort!.on('message', (request: HashRequest) => {
+    const vLength = request.vElementCount * request.vElementSize;
+    const resLength = request.vElementCount * 32;
+    
+    // copy data into WASM memory
+    const vRef = wasm.newArray(vLength);
+    wasm.U8.set(buffer.slice(request.vRef, request.vRef + vLength), vRef);
+
+    // hash the data
+    const resRef = wasm.newArray(resLength);
+    wasm.hashValues1(vRef, resRef, request.vElementSize, request.vElementCount);
+
+    // copy data out of WASM memory
+    const resBuf = Buffer.from(wasm.U8.buffer, resRef, resLength);
+    buffer.set(resBuf, request.resRef);
+
+    // free WASM memory
+    wasm.__release(vRef);
+    wasm.__release(resRef);
+
     parentPort!.postMessage('done!');
 });
-
-/*
-parentPort!.on('message', (message: {a: number[]; b: number[] }) => {
-    const c = new Array<number>(message.a.length);
-    for (let i = 0; i < c.length; i++) {
-        c[i] = message.a[i] + message.b[i];
-    }
-
-    parentPort!.postMessage(c);
-});
-*/
