@@ -1,63 +1,56 @@
 // IMPORTS
 // ================================================================================================
-import { HashAlgorithm, HashFunction } from '@guildofweavers/merkle';
-import * as sha256 from './sha256';
-import * as blake2s256 from './blake2s';
-import * as wasmBlake2s256 from './wasmBlake2s';
-
-// INTERFACES
-// ================================================================================================
-export type MerkleTreeBuilder = (depth: number, leaves: Buffer[]) => ArrayBuffer;
+import { HashAlgorithm, Hash, WasmOptions } from '@guildofweavers/merkle';
+import { WasmBlake2s } from './WasmBlake2s';
+import { JsHash } from './JsHash';
 
 // PUBLIC FUNCTIONS
 // ================================================================================================
-export function getHashFunction(algorithm: HashAlgorithm): HashFunction {
+export function createHash(algorithm: HashAlgorithm, useWasm?: boolean): Hash
+export function createHash(algorithm: HashAlgorithm, options: Partial<WasmOptions>): Hash
+export function createHash(algorithm: HashAlgorithm, useWasmOrOptions?: boolean | Partial<WasmOptions>): Hash {
+    if (!useWasmOrOptions) {
+        return new JsHash(algorithm);
+    }
+
+    const HashCtr = getHashConstructor(algorithm);
+    if (!HashCtr) {
+        return new JsHash(algorithm);
+    }
+
+    const wasmOptions = normalizeWasmOptions(useWasmOrOptions);
+    return new HashCtr(wasmOptions);
+}
+
+export function isWasmOptimized(algorithm: HashAlgorithm): boolean {
     switch (algorithm) {
-        case 'sha256': {
-            return sha256.hash;
-        }
         case 'blake2s256': {
-            return blake2s256.hash;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.hash;
+            return true;
         }
         default: {
-            throw new TypeError('Invalid hash algorithm');
+            return false;
         }
     }
 }
 
-export function getHashDigestSize(algorithm: HashAlgorithm): number {
+// HELPER FUNCTIONS
+// ================================================================================================
+function getHashConstructor(algorithm: HashAlgorithm) {
     switch (algorithm) {
-        case "sha256": {
-            return sha256.digestSize;
-        }
-        case "blake2s256": {
-            return blake2s256.digestSize;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.digestSize;
+        case 'blake2s256': {
+            return WasmBlake2s;
         }
         default: {
-            throw new TypeError('Invalid hash algorithm');
+            return undefined;
         }
     }
 }
 
-export function getMerkleTreeBuilder(algorithm: HashAlgorithm): MerkleTreeBuilder {
-    switch (algorithm) {
-        case "sha256": {
-            return sha256.buildMerkleTree;
-        }
-        case "blake2s256": {
-            return blake2s256.buildMerkleTree;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.buildMerkleTree;
-        }
-        default: {
-            throw new TypeError('Invalid hash algorithm');
-        }
+function normalizeWasmOptions(useWasmOrOptions: boolean | Partial<WasmOptions>): WasmOptions {
+    if (typeof useWasmOrOptions === 'boolean') {
+        return { memory: new WebAssembly.Memory({ initial: 10 }) };
     }
+
+    const memory = useWasmOrOptions.memory || new WebAssembly.Memory({ initial: 10 });
+    return { memory };
 }

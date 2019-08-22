@@ -1,98 +1,142 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-// IMPORTS
-// ================================================================================================
 const assembly_1 = require("../assembly");
+const WasmVector_1 = require("../vectors/WasmVector");
 // MODULE VARIABLES
 // ================================================================================================
-exports.digestSize = 32;
-const wasm = assembly_1.instantiateBlake2s();
-const i1Ref = wasm.getInput1Ref();
-const i2Ref = wasm.getInput2Ref();
-const oRef = wasm.getOutputRef();
-const oEnd = oRef + exports.digestSize;
-const DOUBLE_INPUT_LENGTH = 2 * exports.digestSize;
-const NULL_BUFFER = Buffer.alloc(exports.digestSize);
-const NULL_PARENT = hash(NULL_BUFFER, NULL_BUFFER);
-// PUBLIC FUNCTIONS
+const DIGEST_SIZE = 32; // 32 bytes
+const NULL_BUFFER = Buffer.alloc(DIGEST_SIZE);
+// CLASS DEFINITION
 // ================================================================================================
-function hash(v1, v2) {
-    if (v2 === undefined) {
-        if (v1.byteLength === 32) {
-            wasm.U8.set(v1, i1Ref);
-            wasm.hash1(i1Ref, oRef);
-            return Buffer.from(wasm.U8.slice(oRef, oEnd));
+class WasmBlake2s {
+    // CONSTRUCTOR
+    // --------------------------------------------------------------------------------------------
+    constructor(options) {
+        this.wasm = assembly_1.instantiateBlake2s(options.memory);
+        this.iRef = this.wasm.getInputsRef();
+        this.oRef = this.wasm.getOutputRef();
+        this.oEnd = this.oRef + DIGEST_SIZE;
+    }
+    // PROPERTY ACCESSORS
+    // --------------------------------------------------------------------------------------------
+    get algorithm() {
+        return "blake2s256";
+    }
+    get digestSize() {
+        return DIGEST_SIZE;
+    }
+    get isOptimized() {
+        return true;
+    }
+    // PUBLIC METHODS
+    // --------------------------------------------------------------------------------------------
+    digest(value) {
+        // TODO: investigate checking if the buffer comes from shared memory
+        if (value.byteLength < 4096) {
+            this.wasm.U8.set(value, this.iRef);
+            this.wasm.hash(this.iRef, value.byteLength, this.oRef);
         }
         else {
-            const vRef = wasm.newArray(v1.byteLength);
-            wasm.U8.set(v1, vRef);
-            wasm.hash3(vRef, v1.byteLength, oRef);
-            wasm.__release(vRef);
-            return Buffer.from(wasm.U8.slice(oRef, oEnd));
+            const vRef = this.wasm.newArray(value.byteLength);
+            this.wasm.U8.set(value, vRef);
+            this.wasm.hash(vRef, value.byteLength, this.oRef);
+            this.wasm.__release(vRef);
         }
+        return Buffer.from(this.wasm.U8.subarray(this.oRef, this.oEnd));
     }
-    else {
-        wasm.U8.set(v1, i1Ref);
-        wasm.U8.set(v2, i2Ref);
-        wasm.hash2(i1Ref, i2Ref, oRef);
-        return Buffer.from(wasm.U8.slice(oRef, oEnd));
+    merge(a, b) {
+        this.wasm.U8.set(a, this.iRef);
+        this.wasm.U8.set(b, this.iRef + a.byteLength);
+        this.wasm.hash(this.iRef, a.byteLength + b.byteLength, this.oRef);
+        return Buffer.from(this.wasm.U8.subarray(this.oRef, this.oEnd));
+    }
+    buildMerkleNodes(depth, leaves) {
+        const wasm = this.wasm, iRef = this.iRef;
+        // allocate memory for tree nodes
+        const nodeCount = 1 << depth;
+        const bufferLength = nodeCount * DIGEST_SIZE;
+        const nRef = this.wasm.newArray(bufferLength);
+        // build first row of internal nodes (parents of leaves)
+        const parentCount = nodeCount >>> 1; // nodeCount / 2
+        const evenLeafCount = (leaves.length & 1) ? leaves.length - 1 : leaves.length;
+        let resRef = nRef + parentCount * DIGEST_SIZE;
+        let lBuffer = leaves.toBuffer(), lRef = lBuffer.byteOffset, releaseLeaves = false;
+        if (lBuffer.buffer !== wasm.U8.buffer) {
+            // if the leaves buffer belongs to some other WASM memory, copy it into local memory
+            lRef = wasm.newArray(lBuffer.byteLength);
+            lBuffer = leaves.toBuffer(); // get leaves buffer again in case memory has grown
+            wasm.U8.set(lBuffer, lRef);
+            releaseLeaves = true;
+        }
+        resRef = wasm.hashValues1(lRef, resRef, leaves.elementSize << 1, evenLeafCount >>> 1);
+        // if the leaves were copied into local memory, free that memory
+        if (releaseLeaves) {
+            wasm.__release(lRef);
+        }
+        // if the number of leaves was odd, process the last leaf
+        if (evenLeafCount !== leaves.length) {
+            const lastLeaf = Buffer.from(lBuffer.slice(lBuffer.byteLength - leaves.elementSize));
+            wasm.U8.set(lastLeaf, iRef);
+            wasm.U8.set(NULL_BUFFER, iRef + lastLeaf.length);
+            wasm.hash(iRef, lastLeaf.length + DIGEST_SIZE, resRef);
+            resRef += DIGEST_SIZE;
+        }
+        // if number of leaves was not a power of 2, assume all other leaves are NULL
+        if (leaves.length < nodeCount) {
+            const nullParent = this.merge(NULL_BUFFER, NULL_BUFFER);
+            const resEnd = nRef + bufferLength;
+            while (resRef < resEnd) {
+                this.wasm.U8.set(nullParent, resRef);
+                resRef += DIGEST_SIZE;
+            }
+        }
+        // calculate all other tree nodes
+        let tIndex = (parentCount - 1) * DIGEST_SIZE;
+        let sIndex = tIndex << 1;
+        wasm.hashValues2(nRef + sIndex, nRef + tIndex, DIGEST_SIZE << 1, parentCount);
+        // copy the buffer out of WASM memory, free the memory, and return the buffer
+        const nodes = this.wasm.U8.slice(nRef, nRef + bufferLength);
+        this.wasm.__release(nRef);
+        return nodes.buffer;
+    }
+    mergeVectorRows(vectors) {
+        const elementCount = vectors[0].length;
+        const elementSize = vectors[0].elementSize;
+        if (elementSize > 64) {
+            throw new Error(`Cannot merge vector rows: vector element size must be smaller than 64 bytes`);
+        }
+        else if (64 % elementSize !== 0) {
+            throw new Error(`Cannot merge vector rows: vector element size must be a divisor of 64`);
+        }
+        const vRefs = this.wasm.newArray(vectors.length * 8);
+        const vIdx = vRefs >>> 3;
+        const refsToRelease = new Set();
+        // build array of references to vectors
+        let vRef;
+        for (let i = 0; i < vectors.length; i++) {
+            let buffer = vectors[i].toBuffer();
+            if (buffer.buffer === this.wasm.U8.buffer) {
+                // if the vector is already in WASM memory, just cache the reference to it
+                vRef = buffer.byteOffset;
+            }
+            else {
+                // otherwise, copy the vector into WASM memory
+                vRef = this.wasm.newArray(buffer.byteLength);
+                this.wasm.U8.set(vectors[i].toBuffer(), vRef);
+                refsToRelease.add(vRef);
+            }
+            this.wasm.U64[vIdx + i] = BigInt(vRef);
+        }
+        const resRef = this.wasm.newArray(elementCount * this.digestSize);
+        this.wasm.mergeArrayElements(vRefs, resRef, vectors.length, elementCount, elementSize);
+        // release all memory that was used up during the operation
+        this.wasm.__release(vRefs);
+        for (let vRef of refsToRelease) {
+            this.wasm.__release(vRef);
+        }
+        // build and return a vector with hashes
+        return new WasmVector_1.WasmVector(this.wasm.memory, resRef, elementCount, this.digestSize);
     }
 }
-exports.hash = hash;
-function buildMerkleTree(depth, leaves) {
-    // allocate memory for tree nodes
-    const nodeCount = 2 ** depth;
-    const bufferLength = nodeCount * exports.digestSize;
-    const nRef = wasm.newArray(bufferLength);
-    // build first row of internal nodes (parents of leaves)
-    let parentCount = nodeCount / 2;
-    const evenLeafCount = (leaves.length & 1) ? leaves.length - 1 : leaves.length;
-    hashLeaves(leaves, nRef + parentCount * exports.digestSize, evenLeafCount);
-    // if the number of leaves was odd, process the last leaf
-    let i = parentCount + evenLeafCount;
-    if (evenLeafCount !== leaves.length) {
-        wasm.U8.set(leaves[evenLeafCount], i1Ref);
-        wasm.U8.set(NULL_BUFFER, i2Ref);
-        wasm.hash2(i1Ref, i2Ref, nRef + i * exports.digestSize);
-        i++;
-    }
-    // if number of leaves was not a power of 2, assume all other leaves are NULL
-    while (i < nodeCount) {
-        wasm.U8.set(NULL_PARENT, nRef + i * exports.digestSize);
-        i++;
-    }
-    // calculate all other tree nodes
-    let tIndex = (parentCount - 1) * exports.digestSize;
-    let tRef = nRef + tIndex;
-    let sRef = nRef + (tIndex << 1);
-    while (parentCount > 1024) {
-        parentCount = parentCount / 2;
-        hashParents(sRef, tRef, DOUBLE_INPUT_LENGTH, parentCount);
-        tIndex = (parentCount - 1) * exports.digestSize;
-        tRef = nRef + tIndex;
-        sRef = nRef + (tIndex << 1);
-    }
-    hashParents(sRef, tRef, DOUBLE_INPUT_LENGTH, parentCount);
-    // copy the buffer out of WASM memory, free the memory, and return the buffer
-    const nodes = wasm.U8.slice(nRef, nRef + bufferLength);
-    wasm.__release(nRef);
-    return nodes.buffer;
-}
-exports.buildMerkleTree = buildMerkleTree;
-// HELPER FUNCTIONS
-// ================================================================================================
-function hashLeaves(leaves, resRef, evenLeafCount) {
-    for (let j = 0; j < evenLeafCount; j += 2, resRef += exports.digestSize) {
-        wasm.U8.set(leaves[j], i1Ref);
-        wasm.U8.set(leaves[j + 1], i2Ref);
-        wasm.hash2(i1Ref, i2Ref, resRef);
-    }
-}
-function hashParents(vRef, resRef, vElementSize, vElementCount) {
-    for (let i = vElementCount - 1; i > 0; i--) {
-        wasm.hash3(vRef, vElementSize, resRef);
-        vRef -= vElementSize;
-        resRef -= exports.digestSize;
-    }
-}
-//# sourceMappingURL=wasmBlake2s.js.map
+exports.WasmBlake2s = WasmBlake2s;
+//# sourceMappingURL=WasmBlake2s.js.map

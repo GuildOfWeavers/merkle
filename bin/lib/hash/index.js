@@ -1,59 +1,47 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const sha256 = require("./sha256");
-const blake2s256 = require("./blake2s");
-const wasmBlake2s256 = require("./wasmBlake2s");
-// PUBLIC FUNCTIONS
-// ================================================================================================
-function getHashFunction(algorithm) {
+const WasmBlake2s_1 = require("./WasmBlake2s");
+const JsHash_1 = require("./JsHash");
+function createHash(algorithm, useWasmOrOptions) {
+    if (!useWasmOrOptions) {
+        return new JsHash_1.JsHash(algorithm);
+    }
+    const HashCtr = getHashConstructor(algorithm);
+    if (!HashCtr) {
+        return new JsHash_1.JsHash(algorithm);
+    }
+    const wasmOptions = normalizeWasmOptions(useWasmOrOptions);
+    return new HashCtr(wasmOptions);
+}
+exports.createHash = createHash;
+function isWasmOptimized(algorithm) {
     switch (algorithm) {
-        case 'sha256': {
-            return sha256.hash;
-        }
         case 'blake2s256': {
-            return blake2s256.hash;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.hash;
+            return true;
         }
         default: {
-            throw new TypeError('Invalid hash algorithm');
+            return false;
         }
     }
 }
-exports.getHashFunction = getHashFunction;
-function getHashDigestSize(algorithm) {
+exports.isWasmOptimized = isWasmOptimized;
+// HELPER FUNCTIONS
+// ================================================================================================
+function getHashConstructor(algorithm) {
     switch (algorithm) {
-        case "sha256": {
-            return sha256.digestSize;
-        }
-        case "blake2s256": {
-            return blake2s256.digestSize;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.digestSize;
+        case 'blake2s256': {
+            return WasmBlake2s_1.WasmBlake2s;
         }
         default: {
-            throw new TypeError('Invalid hash algorithm');
+            return undefined;
         }
     }
 }
-exports.getHashDigestSize = getHashDigestSize;
-function getMerkleTreeBuilder(algorithm) {
-    switch (algorithm) {
-        case "sha256": {
-            return sha256.buildMerkleTree;
-        }
-        case "blake2s256": {
-            return blake2s256.buildMerkleTree;
-        }
-        case 'wasmBlake2s256': {
-            return wasmBlake2s256.buildMerkleTree;
-        }
-        default: {
-            throw new TypeError('Invalid hash algorithm');
-        }
+function normalizeWasmOptions(useWasmOrOptions) {
+    if (typeof useWasmOrOptions === 'boolean') {
+        return { memory: new WebAssembly.Memory({ initial: 10 }) };
     }
+    const memory = useWasmOrOptions.memory || new WebAssembly.Memory({ initial: 10 });
+    return { memory };
 }
-exports.getMerkleTreeBuilder = getMerkleTreeBuilder;
 //# sourceMappingURL=index.js.map

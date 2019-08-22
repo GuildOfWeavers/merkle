@@ -22,16 +22,11 @@ let t: u64 = 0;
 
 // INPUTS / OUTPUTS
 // ================================================================================================
-let _input1 = new ArrayBuffer(32);
-let _input2 = new ArrayBuffer(32);
 let _output = new ArrayBuffer(32);
+let _inputs = new ArrayBuffer(1024);
 
-export function getInput1Ref(): usize {
-    return changetype<usize>(_input1);
-}
-
-export function getInput2Ref(): usize {
-    return changetype<usize>(_input2);
+export function getInputsRef(): usize {
+    return changetype<usize>(_inputs);
 }
 
 export function getOutputRef(): usize {
@@ -44,39 +39,7 @@ export function newArray(length: i32): ArrayBuffer {
 
 // PUBLIC FUNCTIONS
 // ================================================================================================
-export function hash1(vRef: usize, resRef: usize): void {
-
-    // initialize the context
-    store<u32>(resRef, 0x6b08e647);   // h[0] = IV[0] ^ 0x01010000 ^ 0 ^ 32;
-    memory.copy(resRef + 4, changetype<usize>(IV) + 4, 28);
-    t = 32;
-
-    // copy input into the buffer
-    let mRef = changetype<usize>(m);
-    memory.copy(mRef, vRef, 32);
-    memory.fill(mRef + 32, 0, 32);
-    
-    // run compression function and store result under resRef
-    compress(resRef, true);
-}
-
-export function hash2(xRef: usize, yRef: usize, resRef: usize): void {
-
-    // initialize the context
-    store<u32>(resRef, 0x6b08e647);   // h[0] = IV[0] ^ 0x01010000 ^ 0 ^ 32;
-    memory.copy(resRef + 4, changetype<usize>(IV) + 4, 28);
-    t = 64;
-
-    // copy input into the buffer
-    let mRef = changetype<usize>(m);
-    memory.copy(mRef, xRef, 32);
-    memory.copy(mRef + 32, yRef, 32);
-    
-    // run compression function and store result under resRef
-    compress(resRef, true);
-}
-
-export function hash3(vRef: usize, vLength: i32, resRef: usize): void {
+export function hash(vRef: usize, vLength: i32, resRef: usize): void {
 
     // initialize the context
     store<u32>(resRef, 0x6b08e647);   // h[0] = IV[0] ^ 0x01010000 ^ 0 ^ 32;
@@ -99,6 +62,62 @@ export function hash3(vRef: usize, vLength: i32, resRef: usize): void {
     memory.fill(mRef + vLength, 0, 64 - vLength);
     t += vLength;
     compress(resRef, true);
+}
+
+export function hashValues1(vRef: usize, resRef: usize, vElementSize: i32, vElementCount: i32): usize {
+    for (let i = 0; i < vElementCount; i++) {
+        hash(vRef, vElementSize, resRef);
+        vRef += vElementSize;
+        resRef += 32;
+    }
+    return resRef;
+}
+
+export function hashValues2(vRef: usize, resRef: usize, vElementSize: i32, vElementCount: i32): usize {
+    for (let i = vElementCount - 1; i > 0; i--) {
+        hash(vRef, vElementSize, resRef);
+        vRef -= vElementSize;
+        resRef -= 32;
+    }
+    return resRef;
+}
+
+export function mergeArrayElements(vRefs: usize, resRef: usize, vCount: i32, vElementCount: i32, vElementSize: i32): void {
+
+    let mRef = changetype<usize>(m);
+    let vLength = vCount * vElementSize;
+    let vOffset = 0;
+    let resEnd = resRef + vElementCount * 32;
+
+    while (resRef < resEnd) {
+
+        // initialize the context
+        store<u32>(resRef, 0x6b08e647);   // h[0] = IV[0] ^ 0x01010000 ^ 0 ^ 32;
+        memory.copy(resRef + 4, changetype<usize>(IV) + 4, 28);
+        t = 0;
+        let c = 0;
+        
+        // run intermediate compressions
+        for (let j = 0; j < vCount; j++) {
+            let vRef = <usize>load<u64>(vRefs + (j << 3));
+            memory.copy(mRef + c, vRef + vOffset, vElementSize);
+            c += vElementSize;
+            t += vElementSize;
+            
+            if (c == 64 && t != vLength) {
+                c = 0;
+                compress(resRef, false);
+            }
+        }
+        
+        // run final compression
+        memory.fill(mRef + c, 0, 64 - c);
+        compress(resRef, true);
+
+        // update references for the next loop iteration
+        resRef += 32;
+        vOffset += vElementSize;
+    }
 }
 
 // INTERNAL FUNCTIONS

@@ -1,24 +1,23 @@
 import { expect } from 'chai';
 
 import { MerkleTree } from '../lib/MerkleTree';
-import { getHashFunction } from '../lib/hash';
+import { createHash } from '../lib/hash';
 
-const hashAlgorithm = 'sha256';
-const hashFn = getHashFunction(hashAlgorithm);
+const hash = createHash('sha256');
 
 const leafCount = 8;
 const elements = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ];
 const bElements = elements.map(e => Buffer.from(e));
 
-const h12 = hashFn(Buffer.from(elements[0] + elements[1]));
-const h34 = hashFn(Buffer.from(elements[2] + elements[3]));
-const h56 = hashFn(Buffer.from(elements[4] + elements[5]));
-const h78 = hashFn(Buffer.from(elements[6] + elements[7]));
+const h12 = hash.digest(Buffer.from(elements[0] + elements[1]));
+const h34 = hash.digest(Buffer.from(elements[2] + elements[3]));
+const h56 = hash.digest(Buffer.from(elements[4] + elements[5]));
+const h78 = hash.digest(Buffer.from(elements[6] + elements[7]));
 
-const h1234 = hashFn(h12, h34);
-const h5678 = hashFn(h56, h78);
+const h1234 = hash.merge(h12, h34);
+const h5678 = hash.merge(h56, h78);
 
-const hRoot = hashFn(h1234, h5678);
+const hRoot = hash.merge(h1234, h5678);
 
 const root = hRoot.toString();
 
@@ -27,7 +26,7 @@ let tree: MerkleTree;
 describe('MerkleTree;', () => {
     describe('create();', () => {
         it('should create new tree', () => {
-            const tree = MerkleTree.create(bElements, hashAlgorithm);
+            const tree = MerkleTree.create(bElements, hash);
 
             expect(tree.depth).to.equal(3);
             expect(tree.values).to.have.length(elements.length);
@@ -37,7 +36,7 @@ describe('MerkleTree;', () => {
 
     describe('prove();', () => {
         beforeEach(() => {
-            tree = MerkleTree.create(bElements, hashAlgorithm);
+            tree = MerkleTree.create(bElements, hash);
         });
 
         describe('should return correct proof for element with index', () => {
@@ -85,7 +84,7 @@ describe('MerkleTree;', () => {
 
     describe('verify();', () => {
         beforeEach(() => {
-            tree = MerkleTree.create(bElements, hashAlgorithm);
+            tree = MerkleTree.create(bElements, hash);
         });
 
         describe('should verify proof for index', () => {
@@ -93,7 +92,7 @@ describe('MerkleTree;', () => {
                 it(String(index), () => {
                     const proof = tree.prove(index);
 
-                    expect(MerkleTree.verify(tree.root, index, proof, hashAlgorithm)).to.be.true;
+                    expect(MerkleTree.verify(tree.root, index, proof, hash)).to.be.true;
                 });
             });
         });
@@ -106,7 +105,7 @@ describe('MerkleTree;', () => {
                 it(`created for index ${index} but verified for ${fIndex}`, () => {
                     const proof = tree.prove(index);
 
-                    expect(MerkleTree.verify(tree.root, fIndex, proof, hashAlgorithm)).to.be.false;
+                    expect(MerkleTree.verify(tree.root, fIndex, proof, hash)).to.be.false;
                 });
             });
         });
@@ -114,7 +113,7 @@ describe('MerkleTree;', () => {
 
     describe('proveBatch();', () => {
         beforeEach(() => {
-            tree = MerkleTree.create(bElements, hashAlgorithm);
+            tree = MerkleTree.create(bElements, hash);
         });
 
         describe('should return correct proof for indexes', () => {
@@ -180,7 +179,7 @@ describe('MerkleTree;', () => {
 
     describe('verifyBatch();', () => {
         beforeEach(() => {
-            tree = MerkleTree.create(bElements, hashAlgorithm);
+            tree = MerkleTree.create(bElements, hash);
         });
 
         describe('should verify proof for indexes', () => {
@@ -196,7 +195,7 @@ describe('MerkleTree;', () => {
                 it(`[${indexes}]`, () => {
                     const proof = tree.proveBatch(indexes);
 
-                    expect(MerkleTree.verifyBatch(tree.root, indexes, proof, hashAlgorithm)).to.be.true;
+                    expect(MerkleTree.verifyBatch(tree.root, indexes, proof, hash)).to.be.true;
                 });
             });
         });
@@ -215,7 +214,7 @@ describe('MerkleTree;', () => {
                 it(`created for indexes [${indexes}] but verified for [${fIndexes}]`, () => {
                     const proof = tree.proveBatch(indexes);
 
-                    expect(MerkleTree.verifyBatch(tree.root, fIndexes, proof, hashAlgorithm)).to.be.false;
+                    expect(MerkleTree.verifyBatch(tree.root, fIndexes, proof, hash)).to.be.false;
                 });
             });
         });
