@@ -35,16 +35,22 @@ console.log(result); // true
 You can find complete API definitions in [merkle.d.ts](/merkle.d.ts). Here is a quick overview of the provided functionality:
 
 ### Creating Merkle trees
-You can use two methods to create a Merkle Tree from a list of values:
+You can create a Merkle Tree from a list of values:
 
 * static **create**(values: `Buffer[]` | `Vector`, hash: `Hash`): `MerkleTree`
 * static **createAsync**(values: `Buffer[]` | `Vector`, hash: `Hash`): `Promise<MerkleTree>`
+
+Values can also be passed in as a single buffer like so:
+
+* static **create**(values: `Buffer`, valueSize: `number`, hash: `Hash`): `MerkleTree`
+* static **createAsync**(values: `Buffer`, valueSize: `number`, hash: `Hash`): `Promise<MerkleTree>`
 
 The meaning of the parameters is as follows:
 
 | Parameter | Description |
 | --------- | ----------- |
-| values    | Values that will form the leaves of the Merkle tree. If provided as an array of `Buffer` objects, all buffers are assumed to have the same length (otherwise, bad things will happen). Can also be provided as an object that complies with `Vector` interface. |
+| values    | Values that will form the leaves of the Merkle tree. If provided as an array of `Buffer` objects, all buffers are assumed to have the same length (otherwise, bad things will happen). Can also be provided as an object that complies with `Vector` interface, or as a single `Buffer` object. |
+| valueSize | If `values` are provided as a single `Buffer`, this parameter specifies length of a single value (in bytes). |
 | hash      | A [hash](#Hash) object that will be used to hash values and internal nodes. |
 
 **Note:** async method is currently just a placeholder. All it does is call the sync version and returns the result.
@@ -111,7 +117,7 @@ interface Hash {
 where, `digest(value)` hashes the provided value, and `merge(a,b)` hashes a concatenation of values `a` and `b`.
 
 ## Performance
-Some very informal benchmarks run on Intel Core i5-7300U @ 2.60GHz (single thread) for generating a tree out of 2<sup>20</sup> values:
+Some very informal benchmarks run on Intel Core i5-7300U @ 2.60GHz (single thread) for generating a tree out of 2<sup>20</sup> 32-byte values:
 
 | Hash Algorithm | Native JS | WASM (external) | WASM (internal)  |
 | -------------- | --------- | --------------- | ---------------- |
@@ -120,7 +126,7 @@ Some very informal benchmarks run on Intel Core i5-7300U @ 2.60GHz (single threa
 
 The difference between _external_ and _internal_ cases for WASM is that in the internal case, values from which the tree is to be built are already in WASM memory, while in the external case, they need to be copied into WASM memory.
 
-**Note:** while WebAssembly-optimized version of Blake2s algorithm is much faster at hashing small values (i.e. 32-64 bytes), it is slower at hashing large values. For example, when hashing 1KB values, Node's native implementation is about 30% faster.
+**Note:** while WebAssembly-optimized version of Blake2s algorithm is much faster at hashing small values (i.e. 32-256 bytes), it is slower at hashing large values. For example, when hashing 1KB values, Node's native implementation is about 50% faster.
 
 ### Batch proof compression
 When you generate batch proofs, the proofs are compressed by removing redundant nodes. The table below shows an approximate size of batch proof for a given number of indexes against trees of a given size.
