@@ -89,7 +89,7 @@ function generateLeaves(leafCount: number): Vector {
     }
 
     if (dataInWasm) {
-        return new WasmVector(memory, bRef!, leafCount, elementSize)
+        return new WasmVector(wasm, bRef!, leafCount, elementSize)
     }
     else {
         return new JsVector(elements);

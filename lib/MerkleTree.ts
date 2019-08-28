@@ -2,6 +2,7 @@
 // ================================================================================================
 import { BatchMerkleProof, Hash, Vector } from '@guildofweavers/merkle';
 import { JsVector } from './vectors/JsVector';
+import { WasmVector } from './vectors/WasmVector';
 
 // CLASS DEFINITION
 // ================================================================================================
@@ -14,14 +15,36 @@ export class MerkleTree {
 
     // CONSTRUCTORS
     // --------------------------------------------------------------------------------------------
-    static async createAsync(values: Buffer[] | Vector, hash: Hash) {
+    static async createAsync(values: Buffer[] | Vector | Buffer, hashOrValueSize: Hash | number, hash?: Hash) {
         // FUTURE: implement asynchronous instantiation
-        return MerkleTree.create(values, hash);
+        return MerkleTree.create(values, hashOrValueSize, hash);
     }
 
-    static create(values: Buffer[] | Vector, hash: Hash) {
-        const depth = Math.ceil(Math.log2(values.length));
-        const leaves = Array.isArray(values) ? new JsVector(values) : values;
+    static create(values: Buffer[] | Vector | Buffer, hashOrValueSize: Hash | number, hash?: Hash) {
+        
+        let leaves: Vector;
+        if (Array.isArray(values)) {
+            if (typeof hashOrValueSize !== 'object') throw new TypeError('Hash object is invalid');
+            leaves = new JsVector(values);
+            hash = hashOrValueSize;
+        }
+        else if (Buffer.isBuffer(values)) {
+            if (typeof hashOrValueSize !== 'number') throw new TypeError('Value size is invalid');
+            if (!hash) throw new TypeError('Hash object is undefined');
+            if (hash.wasm) {
+                leaves = WasmVector.fromBuffer(hash.wasm, values, hashOrValueSize);
+            }
+            else {
+                leaves = JsVector.fromBuffer(values, hashOrValueSize);
+            }
+        }
+        else {
+            if (typeof hashOrValueSize !== 'object') throw new TypeError('Hash object is invalid');
+            leaves = values;
+            hash = hashOrValueSize;
+        }
+
+        const depth = Math.ceil(Math.log2(leaves.length));
         const nodes = hash.buildMerkleNodes(depth, leaves)
         return new MerkleTree(nodes, leaves, depth, hash.digestSize);
     }

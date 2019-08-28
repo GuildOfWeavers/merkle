@@ -26,6 +26,7 @@ declare module '@guildofweavers/merkle' {
         readonly algorithm  : HashAlgorithm;
         readonly digestSize : number;
         readonly isOptimized: boolean;
+        readonly wasm?      : WasmModule;
 
         /** Hashes the provided value */
         digest(value: Buffer): Buffer;
@@ -53,11 +54,27 @@ declare module '@guildofweavers/merkle' {
         static create(values: Buffer[] | Vector, hash: Hash): MerkleTree;
 
         /**
+         * Returns a Merkle tree created from the specified values
+         * @param values A buffer containing serialized values for the tree
+         * @param valueSize Size (in bytes) of each value
+         * @param hash Hash object to use for hashing of internal nodes
+         */
+        static create(values: Buffer, valueSize: number, hash: Hash): MerkleTree;
+
+        /**
          * Returns a Promise for a Merkle tree created from the specified values
          * @param values Values that form the leaves of the tree
          * @param hash Hash object to use for hashing of internal nodes
          */
         static createAsync(values: Buffer[] | Vector, hash: Hash): Promise<MerkleTree>;
+
+         /**
+         * Returns a Promise for a Merkle tree created from the specified values
+         * @param values A buffer containing serialized values for the tree
+         * @param valueSize Size (in bytes) of each value
+         * @param hash Hash object to use for hashing of internal nodes
+         */
+        static create(values: Buffer, valueSize: number, hash: Hash): MerkleTree;
 
         /** Root of the tree */
         readonly root: Buffer;
@@ -113,5 +130,11 @@ declare module '@guildofweavers/merkle' {
 
         copyValue(index: number, destination: Buffer, offset: number): number;
         toBuffer(startIdx?: number, elementCount?: number): Buffer;
+    }
+
+    export interface WasmModule {
+        readonly memory         : WebAssembly.Memory;
+        readonly U8             : Uint8Array;
+        newArray(length: number): number;
     }
 }

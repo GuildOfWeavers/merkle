@@ -14,6 +14,18 @@ export class JsVector implements Vector {
         this.elementSize = values[0].byteLength;
     }
 
+    static fromBuffer(values: Buffer, valueSize: number): JsVector {
+        const elementCount = values.byteLength / valueSize;
+        if (!Number.isInteger(elementCount)) {
+            throw new Error('Value buffer cannot contain partial number of elements');
+        }
+        const result = new Array<Buffer>(elementCount);
+        for (let i = 0, offset = 0; i < elementCount; i++, offset += valueSize) {
+            result[i] = values.slice(offset, offset + valueSize);
+        }
+        return new JsVector(result);
+    }
+
     get byteLength(): number {
         return this.values.length * this.elementSize;
     }

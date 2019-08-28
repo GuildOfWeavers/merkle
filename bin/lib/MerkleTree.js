@@ -1,18 +1,43 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const JsVector_1 = require("./vectors/JsVector");
+const WasmVector_1 = require("./vectors/WasmVector");
 // CLASS DEFINITION
 // ================================================================================================
 class MerkleTree {
     // CONSTRUCTORS
     // --------------------------------------------------------------------------------------------
-    static async createAsync(values, hash) {
+    static async createAsync(values, hashOrValueSize, hash) {
         // FUTURE: implement asynchronous instantiation
-        return MerkleTree.create(values, hash);
+        return MerkleTree.create(values, hashOrValueSize, hash);
     }
-    static create(values, hash) {
-        const depth = Math.ceil(Math.log2(values.length));
-        const leaves = Array.isArray(values) ? new JsVector_1.JsVector(values) : values;
+    static create(values, hashOrValueSize, hash) {
+        let leaves;
+        if (Array.isArray(values)) {
+            if (typeof hashOrValueSize !== 'object')
+                throw new TypeError('Hash object is invalid');
+            leaves = new JsVector_1.JsVector(values);
+            hash = hashOrValueSize;
+        }
+        else if (Buffer.isBuffer(values)) {
+            if (typeof hashOrValueSize !== 'number')
+                throw new TypeError('Value size is invalid');
+            if (!hash)
+                throw new TypeError('Hash object is undefined');
+            if (hash.wasm) {
+                leaves = WasmVector_1.WasmVector.fromBuffer(hash.wasm, values, hashOrValueSize);
+            }
+            else {
+                leaves = JsVector_1.JsVector.fromBuffer(values, hashOrValueSize);
+            }
+        }
+        else {
+            if (typeof hashOrValueSize !== 'object')
+                throw new TypeError('Hash object is invalid');
+            leaves = values;
+            hash = hashOrValueSize;
+        }
+        const depth = Math.ceil(Math.log2(leaves.length));
         const nodes = hash.buildMerkleNodes(depth, leaves);
         return new MerkleTree(nodes, leaves, depth, hash.digestSize);
     }
