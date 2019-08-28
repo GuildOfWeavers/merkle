@@ -7,17 +7,6 @@ class JsVector {
         this.values = values;
         this.elementSize = values[0].byteLength;
     }
-    static fromBuffer(values, valueSize) {
-        const elementCount = values.byteLength / valueSize;
-        if (!Number.isInteger(elementCount)) {
-            throw new Error('Value buffer cannot contain partial number of elements');
-        }
-        const result = new Array(elementCount);
-        for (let i = 0, offset = 0; i < elementCount; i++, offset += valueSize) {
-            result[i] = values.slice(offset, offset + valueSize);
-        }
-        return new JsVector(result);
-    }
     get byteLength() {
         return this.values.length * this.elementSize;
     }

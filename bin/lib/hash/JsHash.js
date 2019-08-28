@@ -95,6 +95,17 @@ class JsHash {
         }
         return new JsVector_1.JsVector(result);
     }
+    digestValues(values, valueSize) {
+        const elementCount = values.byteLength / valueSize;
+        if (!Number.isInteger(elementCount)) {
+            throw new Error('Values buffer cannot contain partial number of elements');
+        }
+        const result = new Array(elementCount);
+        for (let i = 0, offset = 0; i < elementCount; i++, offset += valueSize) {
+            result[i] = this.digest(values.slice(offset, offset + valueSize));
+        }
+        return new JsVector_1.JsVector(result);
+    }
 }
 exports.JsHash = JsHash;
 //# sourceMappingURL=JsHash.js.map

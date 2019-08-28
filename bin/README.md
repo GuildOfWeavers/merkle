@@ -40,11 +40,6 @@ You can create a Merkle Tree from a list of values:
 * static **create**(values: `Buffer[]` | `Vector`, hash: `Hash`): `MerkleTree`
 * static **createAsync**(values: `Buffer[]` | `Vector`, hash: `Hash`): `Promise<MerkleTree>`
 
-Values can also be passed in as a single buffer like so:
-
-* static **create**(values: `Buffer`, valueSize: `number`, hash: `Hash`): `MerkleTree`
-* static **createAsync**(values: `Buffer`, valueSize: `number`, hash: `Hash`): `Promise<MerkleTree>`
-
 The meaning of the parameters is as follows:
 
 | Parameter | Description |

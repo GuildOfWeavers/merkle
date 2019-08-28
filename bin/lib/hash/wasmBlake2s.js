@@ -61,7 +61,7 @@ class WasmBlake2s {
         const evenLeafCount = (leaves.length & 1) ? leaves.length - 1 : leaves.length;
         let resRef = nRef + parentCount * DIGEST_SIZE;
         let lBuffer = leaves.toBuffer(), lRef = lBuffer.byteOffset, releaseLeaves = false;
-        if (lBuffer.buffer !== wasm.U8.buffer) {
+        if (lBuffer.buffer !== wasm.memory.buffer) {
             // if the leaves buffer belongs to some other WASM memory, copy it into local memory
             lRef = wasm.newArray(lBuffer.byteLength);
             lBuffer = leaves.toBuffer(); // get leaves buffer again in case memory has grown
@@ -115,7 +115,7 @@ class WasmBlake2s {
         let vRef;
         for (let i = 0; i < vectors.length; i++) {
             let buffer = vectors[i].toBuffer();
-            if (buffer.buffer === this.wasm.U8.buffer) {
+            if (buffer.buffer === this.wasm.memory.buffer) {
                 // if the vector is already in WASM memory, just cache the reference to it
                 vRef = buffer.byteOffset;
             }
@@ -127,7 +127,7 @@ class WasmBlake2s {
             }
             this.wasm.U64[vIdx + i] = BigInt(vRef);
         }
-        const resRef = this.wasm.newArray(elementCount * this.digestSize);
+        const resRef = this.wasm.newArray(elementCount * DIGEST_SIZE);
         this.wasm.mergeArrayElements(vRefs, resRef, vectors.length, elementCount, elementSize);
         // release all memory that was used up during the operation
         this.wasm.__release(vRefs);
@@ -135,7 +135,33 @@ class WasmBlake2s {
             this.wasm.__release(vRef);
         }
         // build and return a vector with hashes
-        return new WasmVector_1.WasmVector(this.wasm.memory, resRef, elementCount, this.digestSize);
+        return new WasmVector_1.WasmVector(this.wasm.memory, resRef, elementCount, DIGEST_SIZE);
+    }
+    digestValues(values, valueSize) {
+        const elementCount = values.byteLength / valueSize;
+        if (!Number.isInteger(elementCount)) {
+            throw new Error('Values buffer cannot contain partial number of elements');
+        }
+        let vRef, releaseValues;
+        if (this.wasm.memory.buffer === values.buffer) {
+            // if the vector is already in WASM memory, just cache the reference to it
+            vRef = values.byteOffset;
+            releaseValues = false;
+        }
+        else {
+            // otherwise, copy the vector into WASM memory
+            vRef = this.wasm.newArray(values.byteLength);
+            this.wasm.U8.set(values, vRef);
+            releaseValues = true;
+        }
+        // allocate memory to hold the results and hash the values
+        const resRef = this.wasm.newArray(elementCount * DIGEST_SIZE);
+        this.wasm.hashValues1(vRef, resRef, valueSize, elementCount);
+        // if the values were copied into WASM memory during the operation, free the memory
+        if (releaseValues) {
+            this.wasm.__release(vRef);
+        }
+        return new WasmVector_1.WasmVector(this.wasm.memory, resRef, elementCount, DIGEST_SIZE);
     }
 }
 exports.WasmBlake2s = WasmBlake2s;
