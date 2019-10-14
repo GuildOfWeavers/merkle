@@ -31,24 +31,29 @@ class WasmBlake2s {
     // PUBLIC METHODS
     // --------------------------------------------------------------------------------------------
     digest(value) {
+        let memU8 = new Uint8Array(this.wasm.memory.buffer);
         // TODO: investigate checking if the buffer comes from shared memory
         if (value.byteLength < 4096) {
-            this.wasm.U8.set(value, this.iRef);
+            memU8.set(value, this.iRef);
             this.wasm.hash(this.iRef, value.byteLength, this.oRef);
         }
         else {
             const vRef = this.wasm.newArray(value.byteLength);
-            this.wasm.U8.set(value, vRef);
+            if (memU8.buffer !== this.wasm.memory.buffer) {
+                memU8 = new Uint8Array(this.wasm.memory.buffer);
+            }
+            memU8.set(value, vRef);
             this.wasm.hash(vRef, value.byteLength, this.oRef);
             this.wasm.__release(vRef);
         }
-        return Buffer.from(this.wasm.U8.subarray(this.oRef, this.oEnd));
+        return Buffer.from(memU8.subarray(this.oRef, this.oEnd));
     }
     merge(a, b) {
-        this.wasm.U8.set(a, this.iRef);
-        this.wasm.U8.set(b, this.iRef + a.byteLength);
+        const memU8 = new Uint8Array(this.wasm.memory.buffer);
+        memU8.set(a, this.iRef);
+        memU8.set(b, this.iRef + a.byteLength);
         this.wasm.hash(this.iRef, a.byteLength + b.byteLength, this.oRef);
-        return Buffer.from(this.wasm.U8.subarray(this.oRef, this.oEnd));
+        return Buffer.from(memU8.subarray(this.oRef, this.oEnd));
     }
     buildMerkleNodes(depth, leaves) {
         const wasm = this.wasm, iRef = this.iRef;
@@ -64,8 +69,8 @@ class WasmBlake2s {
         if (lBuffer.buffer !== wasm.memory.buffer) {
             // if the leaves buffer belongs to some other WASM memory, copy it into local memory
             lRef = wasm.newArray(lBuffer.byteLength);
-            lBuffer = leaves.toBuffer(); // get leaves buffer again in case memory has grown
-            wasm.U8.set(lBuffer, lRef);
+            const memU8 = new Uint8Array(this.wasm.memory.buffer);
+            memU8.set(lBuffer, lRef);
             releaseLeaves = true;
         }
         resRef = wasm.hashValues1(lRef, resRef, leaves.elementSize << 1, evenLeafCount >>> 1);
@@ -76,8 +81,9 @@ class WasmBlake2s {
         // if the number of leaves was odd, process the last leaf
         if (evenLeafCount !== leaves.length) {
             const lastLeaf = Buffer.from(lBuffer.slice(lBuffer.byteLength - leaves.elementSize));
-            wasm.U8.set(lastLeaf, iRef);
-            wasm.U8.set(NULL_BUFFER, iRef + lastLeaf.length);
+            const memU8 = new Uint8Array(this.wasm.memory.buffer);
+            memU8.set(lastLeaf, iRef);
+            memU8.set(NULL_BUFFER, iRef + lastLeaf.length);
             wasm.hash(iRef, lastLeaf.length + DIGEST_SIZE, resRef);
             resRef += DIGEST_SIZE;
         }
@@ -85,8 +91,9 @@ class WasmBlake2s {
         if (leaves.length < nodeCount) {
             const nullParent = this.merge(NULL_BUFFER, NULL_BUFFER);
             const resEnd = nRef + bufferLength;
+            const memU8 = new Uint8Array(this.wasm.memory.buffer);
             while (resRef < resEnd) {
-                this.wasm.U8.set(nullParent, resRef);
+                memU8.set(nullParent, resRef);
                 resRef += DIGEST_SIZE;
             }
         }
@@ -95,9 +102,9 @@ class WasmBlake2s {
         let sIndex = tIndex << 1;
         wasm.hashValues2(nRef + sIndex, nRef + tIndex, DIGEST_SIZE << 1, parentCount);
         // copy the buffer out of WASM memory, free the memory, and return the buffer
-        const nodes = this.wasm.U8.slice(nRef, nRef + bufferLength);
+        const nBuffer = this.wasm.memory.buffer.slice(nRef, nRef + bufferLength);
         this.wasm.__release(nRef);
-        return nodes.buffer;
+        return nBuffer;
     }
     mergeVectorRows(vectors) {
         const elementCount = vectors[0].length;
@@ -113,6 +120,7 @@ class WasmBlake2s {
         const refsToRelease = new Set();
         // build array of references to vectors
         let vRef;
+        let memU8 = new Uint8Array(this.wasm.memory.buffer);
         for (let i = 0; i < vectors.length; i++) {
             let buffer = vectors[i].toBuffer();
             if (buffer.buffer === this.wasm.memory.buffer) {
@@ -122,10 +130,14 @@ class WasmBlake2s {
             else {
                 // otherwise, copy the vector into WASM memory
                 vRef = this.wasm.newArray(buffer.byteLength);
-                this.wasm.U8.set(vectors[i].toBuffer(), vRef);
+                if (memU8.buffer !== this.wasm.memory.buffer) {
+                    memU8 = new Uint8Array(this.wasm.memory.buffer);
+                }
+                memU8.set(vectors[i].toBuffer(), vRef);
                 refsToRelease.add(vRef);
             }
-            this.wasm.U64[vIdx + i] = BigInt(vRef);
+            const memU64 = new BigUint64Array(this.wasm.memory.buffer);
+            memU64[vIdx + i] = BigInt(vRef);
         }
         const resRef = this.wasm.newArray(elementCount * DIGEST_SIZE);
         this.wasm.mergeArrayElements(vRefs, resRef, vectors.length, elementCount, elementSize);
@@ -151,7 +163,8 @@ class WasmBlake2s {
         else {
             // otherwise, copy the vector into WASM memory
             vRef = this.wasm.newArray(values.byteLength);
-            this.wasm.U8.set(values, vRef);
+            const memU8 = new Uint8Array(this.wasm.memory.buffer);
+            memU8.set(values, vRef);
             releaseValues = true;
         }
         // allocate memory to hold the results and hash the values

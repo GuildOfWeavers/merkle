@@ -78,10 +78,11 @@ function generateLeaves(leafCount: number): Vector {
         bRef = wasm.newArray(leafCount * elementSize);
     }
 
+    const memU8 = new Uint8Array(wasm.memory.buffer);
     for (let i = 0; i < leafCount; i++) {
         let value = crypto.randomBytes(elementSize);
         if (dataInWasm) {
-            wasm.U8.set(value, bRef! + i * elementSize);
+            memU8.set(value, bRef! + i * elementSize);
         }
         else {
             elements.push(value);

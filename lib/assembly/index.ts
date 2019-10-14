@@ -51,15 +51,18 @@ export function instantiateBlake2s(memory?: WebAssembly.Memory): WasmBlake2s {
         env: { memory }
     });
 
+    const memU8 = new Uint8Array(wasm.memory.buffer);
+    
     let sIdx = wasm.getSigmaRef();
     for (let sigma of SIGMA) {
-        wasm.U8[sIdx] = sigma * 4;
+        memU8[sIdx] = sigma * 4;
         sIdx++;
     }
 
+    const memU32 = new Uint32Array(wasm.memory.buffer);
     let iIdx = wasm.getIvRef() >> 2;
     for (let iv of IV) {
-        wasm.U32[iIdx] = iv;
+        memU32[iIdx] = iv;
         iIdx++;
     }
 

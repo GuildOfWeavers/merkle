@@ -4,6 +4,12 @@ const JsVector_1 = require("./vectors/JsVector");
 // CLASS DEFINITION
 // ================================================================================================
 class MerkleTree {
+    constructor(nodes, leaves, depth, nodeSize) {
+        this.depth = depth;
+        this.nodes = Buffer.from(nodes);
+        this.nodeSize = nodeSize;
+        this.values = leaves;
+    }
     // CONSTRUCTORS
     // --------------------------------------------------------------------------------------------
     static async createAsync(values, hash) {
@@ -15,12 +21,6 @@ class MerkleTree {
         const depth = Math.ceil(Math.log2(leaves.length));
         const nodes = hash.buildMerkleNodes(depth, leaves);
         return new MerkleTree(nodes, leaves, depth, hash.digestSize);
-    }
-    constructor(nodes, leaves, depth, nodeSize) {
-        this.depth = depth;
-        this.nodes = Buffer.from(nodes);
-        this.nodeSize = nodeSize;
-        this.values = leaves;
     }
     // PUBLIC ACCESSORS
     // --------------------------------------------------------------------------------------------
