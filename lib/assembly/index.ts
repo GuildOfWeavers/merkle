@@ -47,7 +47,7 @@ export function instantiateBlake2s(memory?: WebAssembly.Memory): WasmBlake2s {
         memory = new WebAssembly.Memory({ initial: 10 });
     }
     
-    const wasm: WasmBlake2s = loader.instantiateBuffer<any>(fs.readFileSync(BLAKE2S_WASM), {
+    const wasm: WasmBlake2s = loader.instantiateSync<any>(fs.readFileSync(BLAKE2S_WASM), {
         env: { memory }
     });
 

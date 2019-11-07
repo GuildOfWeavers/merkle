@@ -29,7 +29,7 @@ function instantiateBlake2s(memory) {
     if (memory === undefined) {
         memory = new WebAssembly.Memory({ initial: 10 });
     }
-    const wasm = loader.instantiateBuffer(fs.readFileSync(BLAKE2S_WASM), {
+    const wasm = loader.instantiateSync(fs.readFileSync(BLAKE2S_WASM), {
         env: { memory }
     });
     const memU8 = new Uint8Array(wasm.memory.buffer);
