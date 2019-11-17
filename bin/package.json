@@ -1,6 +1,6 @@
 {
   "name": "@guildofweavers/merkle",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "Merkle tree and other data structures",
   "main": "index.js",
   "typings": "merkle.d.ts",
@@ -22,12 +22,13 @@
     "node": ">=12.7.x"
   },
   "dependencies": {
-    "assemblyscript": "github:AssemblyScript/assemblyscript"
+    "@assemblyscript/loader": "0.8.x"
   },
   "devDependencies": {
     "@types/chai": "4.2.x",
     "@types/mocha": "5.2.x",
     "@types/node": "12.7.x",
+    "assemblyscript": "0.8.x",
     "chai": "4.2.x",
     "del": "5.0.x",
     "gulp": "4.0.x",
