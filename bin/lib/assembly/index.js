@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // IMPORTS
 // ================================================================================================
 const fs = require("fs");
-const loader = require("assemblyscript/lib/loader");
+const loader = require("@assemblyscript/loader");
 // CONSTANTS
 // ================================================================================================
 const BLAKE2S_WASM = `${__dirname}/blake2s.wasm`;

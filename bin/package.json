@@ -1,6 +1,6 @@
 {
   "name": "@guildofweavers/merkle",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "description": "Merkle tree and other data structures",
   "main": "index.js",
   "typings": "merkle.d.ts",
