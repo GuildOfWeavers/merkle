@@ -1,5 +1,5 @@
 // <reference no-default-lib="true"/>
-/// <reference path="../../node_modules/assemblyscript/std/assembly/index.d.ts" />
+/// <reference types="assemblyscript/std/assembly" />
 
 // CONSTANTS
 // ================================================================================================
